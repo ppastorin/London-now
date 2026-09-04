@@ -1,0 +1,11 @@
+{
+  "name": "london-now-phase-0",
+  "version": "0.1.0",
+  "private": true,
+  "description": "Phase 0 static prototype for the London Now dashboard.",
+  "scripts": {
+    "check": "node --check public/app.js && node scripts/validate.mjs",
+    "dev": "npx wrangler@latest dev",
+    "deploy": "npx wrangler@latest deploy"
+  }
+}

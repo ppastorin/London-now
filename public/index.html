@@ -1,0 +1,258 @@
+<!doctype html>
+<html lang="en-GB">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="theme-color" content="#f4efe6">
+  <meta name="description" content="London Now — a compact London travel dashboard prototype from London Advanced.">
+  <title>London Now · Phase 0</title>
+  <link rel="stylesheet" href="./styles.css">
+  <script src="./app.js" defer></script>
+</head>
+<body>
+  <a class="skip-link" href="#dashboard">Skip to dashboard</a>
+
+  <header class="site-header">
+    <a class="brand" href="https://www.londonadvanced.com/" target="_blank" rel="noreferrer">
+      <span class="brand-kicker">London Advanced</span>
+      <span class="brand-title">London Now</span>
+    </a>
+    <div class="header-actions">
+      <button class="button button--quiet" id="customiseButton" type="button" aria-haspopup="dialog">
+        <span aria-hidden="true">☷</span> Customise
+      </button>
+      <a class="button button--dark" id="fullScreenLink" href="./" target="_blank" rel="noreferrer">
+        Open full screen <span aria-hidden="true">↗</span>
+      </a>
+    </div>
+  </header>
+
+  <div class="demo-banner" role="status">
+    <strong>Phase 0 prototype</strong>
+    <span>All conditions, delays and events below are illustrative sample data—not live travel advice.</span>
+  </div>
+
+  <main id="dashboard" class="page-shell">
+    <section class="intro" aria-labelledby="pageTitle">
+      <div>
+        <p class="eyebrow">Your compact London briefing</p>
+        <h1 id="pageTitle">Know what matters before you set off.</h1>
+      </div>
+      <p class="intro-copy">Weather, transport, airports and ideas for the day—with a direct route back to every official source.</p>
+    </section>
+
+    <section class="controls" aria-label="Dashboard controls">
+      <div class="date-switcher" id="dateSwitcher" aria-label="Choose day"></div>
+      <div class="view-switcher" role="tablist" aria-label="Choose dashboard view">
+        <button class="view-tab is-active" role="tab" aria-selected="true" data-view="now" type="button">Now</button>
+        <button class="view-tab" role="tab" aria-selected="false" data-view="travel" type="button">Travel</button>
+        <button class="view-tab" role="tab" aria-selected="false" data-view="flights" type="button">Flights</button>
+        <button class="view-tab" role="tab" aria-selected="false" data-view="events" type="button">Events</button>
+      </div>
+    </section>
+
+    <section class="alert-strip" data-card data-views="now travel" aria-label="Sample priority alert">
+      <span class="alert-label">Sample alert</span>
+      <span>District line: minor delays between Earl’s Court and Wimbledon.</span>
+      <a href="https://tfl.gov.uk/tube-dlr-overground/status/" target="_blank" rel="noreferrer">Check TfL <span aria-hidden="true">↗</span></a>
+    </section>
+
+    <div class="dashboard-grid">
+      <article class="card card--weather" data-card data-views="now">
+        <header class="card-header">
+          <div>
+            <p class="card-kicker">Weather · sample</p>
+            <h2>London outlook</h2>
+          </div>
+          <span class="weather-mark" aria-hidden="true">18°</span>
+        </header>
+        <p class="weather-summary">Bright spells, a brisk breeze and a chance of a short afternoon shower.</p>
+        <div class="metric-row" aria-label="Sample weather details">
+          <span><strong>12°</strong> low</span>
+          <span><strong>35%</strong> rain</span>
+          <span><strong>14 mph</strong> wind</span>
+        </div>
+        <footer class="source-row">
+          <span>Sample only</span>
+          <span class="source-links">
+            <a href="https://weather.metoffice.gov.uk/forecast/gcpvj0v07" target="_blank" rel="noreferrer">Met Office ↗</a>
+            <a href="https://www.bbc.co.uk/weather/2643743" target="_blank" rel="noreferrer">BBC ↗</a>
+          </span>
+        </footer>
+      </article>
+
+      <article class="card card--travel" data-card data-views="now travel">
+        <header class="card-header">
+          <div>
+            <p class="card-kicker">Getting around · sample</p>
+            <h2>Network pulse</h2>
+          </div>
+          <span class="status-chip status-chip--mixed">2 notices</span>
+        </header>
+        <ul class="status-list">
+          <li>
+            <span class="mode-dot mode-dot--tube" aria-hidden="true"></span>
+            <span><strong>Tube & rail</strong><small>Most routes shown as running normally</small></span>
+            <span class="status-text status-text--good">Good</span>
+          </li>
+          <li id="stationRow">
+            <span class="mode-dot mode-dot--rail" aria-hidden="true"></span>
+            <span><strong id="stationName">London Waterloo</strong><small>Sample departures view</small></span>
+            <span class="status-text">View</span>
+          </li>
+          <li id="stepFreeRow">
+            <span class="mode-dot mode-dot--access" aria-hidden="true"></span>
+            <span><strong>Step-free access</strong><small>One sample lift notice nearby</small></span>
+            <span class="status-text status-text--warn">Check</span>
+          </li>
+        </ul>
+        <footer class="source-row">
+          <span>Sample only</span>
+          <span class="source-links">
+            <a href="https://tfl.gov.uk/tube-dlr-overground/status/" target="_blank" rel="noreferrer">TfL ↗</a>
+            <a href="https://www.nationalrail.co.uk/status-and-disruptions/" target="_blank" rel="noreferrer">National Rail ↗</a>
+          </span>
+        </footer>
+      </article>
+
+      <article class="card card--pick" data-card data-views="now events">
+        <div class="pick-image" role="img" aria-label="A map of hand-picked London places"></div>
+        <div class="pick-content">
+          <p class="card-kicker">London Advanced pick</p>
+          <h2>Build a better route, not a longer list.</h2>
+          <p>Use the map as a starting point, then choose places that work together by neighbourhood and travel time.</p>
+          <a class="text-link" href="https://www.londonadvanced.com/home/smart-navigation" target="_blank" rel="noreferrer">Try Smart Navigation <span aria-hidden="true">↗</span></a>
+        </div>
+      </article>
+
+      <article class="card card--airports" data-card data-views="now flights">
+        <header class="card-header">
+          <div>
+            <p class="card-kicker">Airport access · sample</p>
+            <h2>Your airports</h2>
+          </div>
+          <button class="inline-control" type="button" data-open-settings>Change</button>
+        </header>
+        <ul class="airport-list" id="airportList">
+          <li data-airport="LHR"><span><strong>LHR</strong> Heathrow</span><span class="status-text status-text--good">Typical</span></li>
+          <li data-airport="LGW"><span><strong>LGW</strong> Gatwick</span><span class="status-text status-text--warn">Allow extra time</span></li>
+          <li data-airport="LTN"><span><strong>LTN</strong> Luton</span><span class="status-text">Check route</span></li>
+          <li data-airport="STN"><span><strong>STN</strong> Stansted</span><span class="status-text status-text--good">Typical</span></li>
+          <li data-airport="LCY"><span><strong>LCY</strong> London City</span><span class="status-text">Check route</span></li>
+        </ul>
+        <div class="official-boards" aria-label="Official airport flight boards">
+          <a data-airport-link="LHR" href="https://www.heathrow.com/arrivals" target="_blank" rel="noreferrer">LHR board ↗</a>
+          <a data-airport-link="LGW" href="https://www.gatwickairport.com/flights/" target="_blank" rel="noreferrer">LGW board ↗</a>
+          <a data-airport-link="LTN" href="https://www.london-luton.co.uk/flights" target="_blank" rel="noreferrer">LTN board ↗</a>
+          <a data-airport-link="STN" href="https://www.stanstedairport.com/flight-information/" target="_blank" rel="noreferrer">STN board ↗</a>
+          <a data-airport-link="LCY" href="https://www.londoncityairport.com/flight-information" target="_blank" rel="noreferrer">LCY board ↗</a>
+        </div>
+        <footer class="source-row">
+          <span>Sample access status</span>
+          <a href="https://tfl.gov.uk/plan-a-journey/" target="_blank" rel="noreferrer">Journey Planner ↗</a>
+        </footer>
+      </article>
+
+      <article class="card card--events" data-card data-views="now events">
+        <header class="card-header">
+          <div>
+            <p class="card-kicker">What’s on · sample</p>
+            <h2>Ideas for your day</h2>
+          </div>
+          <span class="date-badge" id="selectedDateBadge">Today</span>
+        </header>
+        <ol class="event-list">
+          <li>
+            <time>10:00</time>
+            <span><strong>Riverside architecture walk</strong><small>South Bank · illustrative listing</small></span>
+          </li>
+          <li>
+            <time>14:30</time>
+            <span><strong>Independent gallery afternoon</strong><small>Mayfair · illustrative listing</small></span>
+          </li>
+          <li>
+            <time>19:00</time>
+            <span><strong>Small-stage theatre pick</strong><small>Covent Garden · illustrative listing</small></span>
+          </li>
+        </ol>
+        <footer class="source-row">
+          <span>Illustrative listings</span>
+          <a href="https://www.timeout.com/london/things-to-do" target="_blank" rel="noreferrer">Browse Time Out ↗</a>
+        </footer>
+      </article>
+
+      <article class="card card--tools" data-card data-views="now travel">
+        <header class="card-header">
+          <div>
+            <p class="card-kicker">London Advanced</p>
+            <h2>Your shortcuts</h2>
+          </div>
+        </header>
+        <nav class="tool-links" aria-label="London Advanced tools">
+          <a href="https://london-advanced-crowd-pressure.ppastorin.workers.dev/" target="_blank" rel="noreferrer"><span>Escape the crowds</span><span aria-hidden="true">↗</span></a>
+          <a href="https://www.londonadvanced.com/home/smart-navigation" target="_blank" rel="noreferrer"><span>Smart navigation</span><span aria-hidden="true">↗</span></a>
+          <a href="https://www.londonadvanced.com/london-travel-fare-calculator" target="_blank" rel="noreferrer"><span>Fare optimiser</span><span aria-hidden="true">↗</span></a>
+        </nav>
+      </article>
+    </div>
+
+    <section class="phase-note" aria-labelledby="phaseNoteTitle">
+      <div>
+        <p class="card-kicker">Build status</p>
+        <h2 id="phaseNoteTitle">Phase 0 proves the shell.</h2>
+      </div>
+      <p>It intentionally makes no live API calls. The next phase can connect one source at a time only after layout, embedding and mobile behaviour pass acceptance testing.</p>
+    </section>
+  </main>
+
+  <footer class="site-footer">
+    <span>London Now · Phase 0</span>
+    <span>Always confirm journeys with the official operator before travelling.</span>
+  </footer>
+
+  <dialog class="settings-dialog" id="settingsDialog" aria-labelledby="settingsTitle">
+    <form id="settingsForm">
+      <header class="dialog-header">
+        <div>
+          <p class="card-kicker">Local preferences</p>
+          <h2 id="settingsTitle">Customise your view</h2>
+        </div>
+        <button class="icon-button" id="closeSettings" type="button" aria-label="Close settings">×</button>
+      </header>
+
+      <fieldset>
+        <legend>Airports to show</legend>
+        <div class="check-grid">
+          <label><input type="checkbox" name="airport" value="LHR" checked> Heathrow (LHR)</label>
+          <label><input type="checkbox" name="airport" value="LGW" checked> Gatwick (LGW)</label>
+          <label><input type="checkbox" name="airport" value="LTN"> Luton (LTN)</label>
+          <label><input type="checkbox" name="airport" value="STN" checked> Stansted (STN)</label>
+          <label><input type="checkbox" name="airport" value="LCY"> London City (LCY)</label>
+        </div>
+      </fieldset>
+
+      <label class="field-label" for="stationSelect">Preferred London station</label>
+      <select id="stationSelect" name="station">
+        <option>London Waterloo</option>
+        <option>London Victoria</option>
+        <option>London Paddington</option>
+        <option>London Liverpool Street</option>
+        <option>London Bridge</option>
+        <option>London King’s Cross</option>
+        <option>London Euston</option>
+      </select>
+
+      <label class="toggle-row">
+        <span><strong>Step-free notices</strong><small>Show the accessibility row in Travel.</small></span>
+        <input type="checkbox" id="stepFreeToggle" name="stepFree" checked>
+      </label>
+
+      <p class="privacy-note">Preferences stay only in this browser. Phase 0 sends no personal data.</p>
+      <div class="dialog-actions">
+        <button class="button button--quiet" id="resetSettings" type="button">Reset</button>
+        <button class="button button--dark" type="submit">Save preferences</button>
+      </div>
+    </form>
+  </dialog>
+</body>
+</html>
