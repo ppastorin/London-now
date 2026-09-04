@@ -1,20 +1,22 @@
 # Changelog
 
+## 0.3.0 — 4 September 2026
+
+- Added Met Office Weather DataHub Global Spot daily forecast.
+- Added Cloudflare KV-backed global weather caching.
+- Added an hourly scheduled refresh and on-demand initial cache prime.
+- Connected the existing three-day date selector to weather results.
+- Added missing-secret, missing-KV, stale and upstream-failure states.
+- Added Met Office fixture tests and deployment validation.
+
 ## 0.2.0 — 4 September 2026
 
-- Added live TfL line status through a same-origin Worker endpoint.
-- Added short server-side caching, normalisation tests and failure states.
-- Removed invented operational weather, rail, airport and event values.
-- Added preview-branch deployment and acceptance instructions.
+- Added live TfL status with short server-side caching.
+- Removed invented weather, airport, rail and event values.
 
 ## 0.1.1 — 4 September 2026
 
-- Corrected the Wrangler Worker name from `london-now-phase-0` to `london-now` so it matches the existing Cloudflare project.
-- Explicitly enabled the `workers.dev` route and preview URLs.
-- Pinned Wrangler to `4.129.0` and changed Cloudflare's deploy command to `npm run deploy`.
-- Replaced the repository and Cloudflare instructions with a repository-first, name-matched process.
-
-No dashboard interface or sample content changed in this release.
+- Matched the Wrangler name to the existing `london-now` Worker.
 
 ## 0.1.0 — 4 September 2026
 

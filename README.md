@@ -1,133 +1,186 @@
-# London Now — Build 1: live TfL (v0.2.0)
+# London Now — Build 2: live TfL and Met Office weather (v0.3.0)
 
-This build replaces all invented operational values with either live TfL status, an explicit unavailable/not-connected state, or an official source link. It updates the existing `london-now` Worker and does not create another application.
+Deploy this only after Build 1 (`v0.2.0`) has passed and the production commit is tagged `phase-1-tfl-approved`. It updates the same `london-now` Worker.
 
 ## What becomes live
 
-- Tube, DLR, London Overground and Elizabeth line status from the TfL Unified API
-- A compact priority alert built from current reported disruptions
-- TfL fetch time and clear upstream-failure state
-- Server-side short caching so visitors do not call TfL directly
+- TfL line status from Build 1
+- Daily London forecast from the Met Office Weather DataHub Global Spot API
+- Today plus the next two days linked to the existing date selector
+- High/low temperature, rain probability, wind and weather description
+- Hourly server-side refresh into Cloudflare KV
+- Explicit stale, missing-configuration and upstream-failure states
 
-Weather, National Rail, airport access and events are intentionally not inferred. They remain link-only until their individual integrations pass later gates.
+National Rail, airport access and event listings remain official-link services.
 
-## Architecture
+## Why this uses KV
 
-The browser requests `/api/tfl` from the same `london-now` Worker. The Worker calls TfL, removes unnecessary fields and returns a small normalised response. The API is cached for 75 seconds. An optional TfL key can be stored as a Cloudflare secret; it never appears in browser code or GitHub.
+The Met Office free Global Spot plan publishes a daily request allowance. Cloudflare edge-cache entries are data-centre-local and are not a reliable quota control. Build 2 therefore refreshes one London forecast hourly and writes it to globally replicated Workers KV. Visitors read the cached result rather than calling the Met Office themselves.
 
-## Step 1 — protect Phase 0
+The scheduled design targets roughly 24 Met Office requests per day, comfortably below the published free allowance. A first request can also prime an empty cache.
 
-Confirm the working Phase 0 state is committed on `main`, then create a release/tag named `phase-0-approved` in GitHub. Do not delete the existing Worker or disconnect its repository.
+## Step 1 — obtain the free Met Office credential
 
-## Step 2 — enable preview branch builds
+1. Go to `https://datahub.metoffice.gov.uk/` and select **Login/Register**.
+2. Verify the account email and sign in.
+3. Choose the **Site-Specific / Global Spot** product.
+4. Select its **Free plan**. Do not choose a paid tier.
+5. Accept the applicable Weather DataHub terms.
+6. Open **My Subscriptions** and copy the API key.
 
-In Cloudflare:
+Do not paste the key into GitHub, `wrangler.jsonc`, JavaScript, a screenshot or a support message.
 
-1. Open **Workers & Pages → london-now → Settings → Builds**.
-2. Open **Branch control**.
-3. Keep `main` as the production branch.
-4. Enable builds for non-production branches.
-5. Set the non-production deploy command to `npm run preview` if Cloudflare exposes that field.
+## Step 2 — add the Cloudflare secret
 
-The production settings remain:
+Adding the secret does not change the currently deployed Build 1.
 
-| Setting | Value |
-|---|---|
-| Root directory | `/` |
-| Build command | `npm run check` |
-| Deploy command | `npm run deploy` |
+1. Open **Cloudflare → Workers & Pages → london-now**.
+2. Open **Settings → Variables and Secrets**.
+3. Add a new **secret**, not plain text variable.
+4. Name: `METOFFICE_API_KEY`.
+5. Value: the key copied from Weather DataHub.
+6. Save.
 
-## Step 3 — upload Build 1 to a branch
+Keep the optional `TFL_APP_KEY` secret if one is already configured.
 
-In GitHub:
+## Step 3 — upload Build 2 to a preview branch
 
-1. Open the existing `london-now` repository.
-2. Create a branch named `phase-1-tfl` from `main`.
-3. Upload the **contents inside this package folder** to the repository root on that branch.
-4. Commit with `Add live TfL status`.
+1. In GitHub, create `phase-2-weather` from the approved `main` branch.
+2. Upload the **contents inside this package folder** to the repository root on that branch.
+3. Commit with `Add live Met Office weather`.
+4. Cloudflare should run:
 
-The root must contain `worker/index.js`, `public/index.html`, `package.json` and `wrangler.jsonc`. Do not upload the enclosing folder as another level.
+   | Setting | Value |
+   |---|---|
+   | Build command | `npm run check` |
+   | Non-production deploy command | `npm run preview` |
 
-## Step 4 — test the Cloudflare preview
+The Wrangler configuration declares `WEATHER_CACHE` without an account-specific ID. Wrangler 4.129 uses Cloudflare automatic resource provisioning to create and bind the KV namespace.
 
-Cloudflare should build the non-production branch and create a version preview URL. Test these addresses using the preview hostname it supplies:
+If provisioning fails because the build token cannot create KV resources, use the fallback at the end of this document. Do not remove caching and call the Met Office once per visitor.
+
+## Step 4 — validate the preview APIs
+
+Use the preview hostname generated for `phase-2-weather`.
+
+### Health
+
+Open:
 
 ```text
 https://PREVIEW-HOST/api/health
-https://PREVIEW-HOST/api/tfl
-https://PREVIEW-HOST/
 ```
 
-Expected health response includes:
+It must return HTTP 200 with:
 
 ```json
 {
   "status": "ok",
-  "version": "0.2.0",
+  "version": "0.3.0",
   "integrations": {
     "tfl": "live",
-    "weather": "not-in-this-build"
+    "weather": "ready"
   }
 }
 ```
 
-Expected `/api/tfl` behaviour:
+`missing-secret` means the Cloudflare secret is absent or not available to that version. `missing-kv` means the binding was not provisioned.
 
-- HTTP 200
-- `provider` is `Transport for London`
-- `lines` is a non-empty array
-- every line has `name`, `status` and `disrupted`
-- `checkedAt` is recent
-- response header `x-cache` is `MISS` on an uncached request and normally `HIT` on a subsequent request
+### Weather
 
-## Step 5 — optional TfL API key
+Open:
 
-TfL currently permits anonymous access at a lower published limit. For a small Phase 1 test, the 75-second server cache should be sufficient. For wider use, register for TfL open data and add the key without putting it in GitHub:
+```text
+https://PREVIEW-HOST/api/weather
+```
 
-1. Register at `https://api-portal.tfl.gov.uk/`.
-2. Subscribe to the available 500-requests-per-minute product.
-3. Copy the `app_key` from your profile.
-4. In Cloudflare open **london-now → Settings → Variables and Secrets**.
-5. Add a **secret** named `TFL_APP_KEY` and paste the key as its value.
-6. Redeploy the preview branch.
+It must return HTTP 200 and contain:
 
-The integration also works without this secret.
+- `provider: "Met Office Weather DataHub"`
+- `location`
+- a non-empty `days` array
+- `fetchedAt`
+- `stale: false`
+- no API key or raw credential
 
-## Step 6 — acceptance tests
+Each day should contain a date, condition, maximum and minimum temperature, rain probability and wind speed. A genuinely unavailable field may be `null`; it must not be invented.
 
-Complete `TEST-CHECKLIST.md`. Do not merge if:
+### TfL regression
 
-- the dashboard shows invented status values;
-- `/api/tfl` exposes an API key;
-- a TfL failure leaves a permanent spinner;
-- the status card overflows on a phone;
-- the Google Sites preview introduces a second horizontal scrollbar.
+Open `/api/tfl` and confirm Build 1 still works.
 
-## Step 7 — promote to production
+## Step 5 — validate the preview interface
 
-1. Open a GitHub pull request from `phase-1-tfl` into `main`.
-2. Confirm the Cloudflare preview check passed.
-3. Merge the pull request.
-4. Wait for the production build to complete.
-5. Re-test:
+1. Open the preview dashboard.
+2. Confirm the weather card leaves its loading state.
+3. Compare today's values with the linked Met Office London forecast. Small differences can occur because model update and location/time aggregation differ; grossly different values are a failure.
+4. Select tomorrow and the following day. The card must change to the corresponding forecast date.
+5. Confirm the fetch time is shown in London time.
+6. Confirm TfL still updates independently if weather fails.
+7. Complete `TEST-CHECKLIST.md` on phone and desktop widths.
+
+## Step 6 — promote to production
+
+1. Open a pull request from `phase-2-weather` to `main`.
+2. Merge only after the API and UI checklist passes.
+3. Wait for the production deployment.
+4. Test:
 
    ```text
    https://london-now.ppastorin.workers.dev/api/health
+   https://london-now.ppastorin.workers.dev/api/weather
    https://london-now.ppastorin.workers.dev/api/tfl
    https://london-now.ppastorin.workers.dev/
    ```
 
-6. Test the existing Google Sites embed. Its URL does not change.
-7. Tag the approved commit `phase-1-tfl-approved`.
+5. Check **Workers & Pages → london-now → Triggers** and confirm the hourly cron exists.
+6. Check the existing Google Sites embed. Its URL does not change.
+7. Tag the approved commit `phase-2-weather-approved`.
+
+## Step 7 — validate the scheduled refresh
+
+After at least 70 minutes:
+
+1. Open `/api/weather` again.
+2. Confirm `fetchedAt` has advanced.
+3. Confirm the data remains `stale: false`.
+4. In Cloudflare logs, confirm scheduled executions are successful and do not expose the API key.
+
+Do not proceed to National Rail until this refresh test passes.
+
+## KV provisioning fallback
+
+Use this only if the preview build explicitly says it cannot provision the KV namespace.
+
+1. In Cloudflare open **Storage & Databases → KV**.
+2. Create a namespace named `london-now-weather-cache`.
+3. Copy its namespace ID.
+4. Change this block in `wrangler.jsonc`:
+
+   ```json
+   "kv_namespaces": [
+     {
+       "binding": "WEATHER_CACHE",
+       "id": "PASTE_THE_NAMESPACE_ID_HERE"
+     }
+   ]
+   ```
+
+5. Commit the change only to `phase-2-weather` and let Cloudflare rebuild.
 
 ## Rollback
 
-If production fails, use Cloudflare **Deployments** to roll back to the last Phase 0 version, then revert the merge commit in GitHub. Do not create a replacement Worker.
+If Build 2 fails in production, roll Cloudflare back to the approved Build 1 deployment and revert the merge in GitHub. The unused Met Office secret and KV namespace can remain temporarily while the fault is diagnosed; neither changes Build 1 behaviour.
+
+## Source decision
+
+Open-Meteo was not used as the production shortcut. Its free hosted API excludes commercial use, including advertising or promotional applications. London Advanced has monetisation ambitions, so depending on that free endpoint would create a predictable licensing problem. The Met Office's own free Weather DataHub plan is the cleaner route, subject to its accepted subscription terms.
 
 ## Official references
 
-- [TfL Unified API](https://api.tfl.gov.uk/)
-- [TfL developer portal](https://api-portal.tfl.gov.uk/)
-- [Cloudflare preview URLs](https://developers.cloudflare.com/workers/configuration/previews/)
-- [Cloudflare build branches](https://developers.cloudflare.com/workers/ci-cd/builds/build-branches/)
-- [Cloudflare Workers static assets](https://developers.cloudflare.com/workers/static-assets/)
+- [Met Office Weather DataHub](https://datahub.metoffice.gov.uk/)
+- [Met Office Global Spot overview](https://datahub.metoffice.gov.uk/docs/f/category/site-specific/overview)
+- [Met Office site-specific pricing](https://datahub.metoffice.gov.uk/pricing/site-specific)
+- [Cloudflare automatic resource provisioning](https://developers.cloudflare.com/changelog/post/2025-10-24-automatic-resource-provisioning/)
+- [Cloudflare KV bindings](https://developers.cloudflare.com/kv/concepts/kv-bindings/)
+- [Cloudflare Cron Triggers](https://developers.cloudflare.com/workers/configuration/cron-triggers/)

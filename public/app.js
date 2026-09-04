@@ -17,6 +17,75 @@
 
   let activeView = "now";
   let preferences = readPreferences();
+  let selectedWeatherDate = londonDateKey(new Date());
+  let weatherForecast = null;
+
+  async function loadWeather() {
+    const card = document.querySelector("#weatherCard");
+    try {
+      const response = await fetch("./api/weather", { headers: { accept: "application/json" } });
+      const data = await response.json();
+      if (!response.ok) throw new Error(data.error || `HTTP ${response.status}`);
+      weatherForecast = data;
+      renderWeather();
+      card.classList.remove("is-loading");
+      card.setAttribute("aria-busy", "false");
+    } catch (error) {
+      weatherForecast = null;
+      document.querySelector("#weatherKicker").textContent = "Weather · unavailable";
+      document.querySelector("#weatherTitle").textContent = "Check the official forecast";
+      document.querySelector("#weatherTemp").textContent = "—°";
+      document.querySelector("#weatherTemp").setAttribute("aria-label", "Temperature unavailable");
+      document.querySelector("#weatherSummary").textContent = error instanceof Error ? error.message : "Weather data could not be loaded.";
+      document.querySelector("#weatherLow").textContent = "—";
+      document.querySelector("#weatherRain").textContent = "—";
+      document.querySelector("#weatherWind").textContent = "—";
+      document.querySelector("#weatherFreshness").textContent = "Live fetch failed · use official source";
+      card.classList.remove("is-loading");
+      card.setAttribute("aria-busy", "false");
+    }
+  }
+
+  function renderWeather() {
+    if (!weatherForecast) return;
+    const day = weatherForecast.days.find((item) => item.date === selectedWeatherDate) || weatherForecast.days[0];
+    if (!day) return;
+
+    const readableDate = new Date(`${day.date}T12:00:00Z`).toLocaleDateString("en-GB", {
+      weekday: "long",
+      day: "numeric",
+      month: "short",
+      timeZone: "Europe/London"
+    });
+    const max = formatMetric(day.maxC, "°");
+    document.querySelector("#weatherKicker").textContent = weatherForecast.stale ? "Weather · update delayed" : "Weather · live forecast";
+    document.querySelector("#weatherTitle").textContent = `${weatherForecast.location} · ${readableDate}`;
+    document.querySelector("#weatherTemp").textContent = max;
+    document.querySelector("#weatherTemp").setAttribute("aria-label", `Forecast high ${max}`);
+    document.querySelector("#weatherTemp").classList.remove("weather-mark--pending");
+    document.querySelector("#weatherSummary").textContent = day.condition;
+    document.querySelector("#weatherLow").textContent = formatMetric(day.minC, "°");
+    document.querySelector("#weatherRain").textContent = formatMetric(day.rainProbability, "%");
+    document.querySelector("#weatherWind").textContent = formatMetric(day.windMph, " mph");
+    document.querySelector("#weatherFreshness").textContent = weatherForecast.stale
+      ? `Update delayed · last fetched ${formatTime(weatherForecast.fetchedAt)}`
+      : `Met Office fetched ${formatTime(weatherForecast.fetchedAt)}`;
+  }
+
+  function formatMetric(value, suffix) {
+    return value == null ? "—" : `${value}${suffix}`;
+  }
+
+  function londonDateKey(date) {
+    const parts = new Intl.DateTimeFormat("en-GB", {
+      year: "numeric",
+      month: "2-digit",
+      day: "2-digit",
+      timeZone: "Europe/London"
+    }).formatToParts(date);
+    const values = Object.fromEntries(parts.map((part) => [part.type, part.value]));
+    return `${values.year}-${values.month}-${values.day}`;
+  }
 
   async function loadTfl() {
     const list = document.querySelector("#tflLines");
@@ -148,6 +217,7 @@
       button.dataset.badge = index === 0
         ? "Today"
         : date.toLocaleDateString("en-GB", { weekday: "short", day: "numeric", month: "short" });
+      button.dataset.date = londonDateKey(date);
       button.setAttribute("aria-pressed", index === 0 ? "true" : "false");
       button.addEventListener("click", () => {
         document.querySelectorAll(".date-button").forEach((item) => {
@@ -156,6 +226,8 @@
           item.setAttribute("aria-pressed", selected ? "true" : "false");
         });
         selectedDateBadge.textContent = button.dataset.badge;
+        selectedWeatherDate = button.dataset.date;
+        renderWeather();
       });
       dateSwitcher.appendChild(button);
     });
@@ -238,5 +310,7 @@
   applyPreferences();
   applyView();
   loadTfl();
+  loadWeather();
   window.setInterval(loadTfl, 90_000);
+  window.setInterval(loadWeather, 5 * 60_000);
 })();

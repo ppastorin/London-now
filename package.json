@@ -1,9 +1,9 @@
 {
   "name": "london-now",
-  "version": "0.2.0",
+  "version": "0.3.0",
   "private": true,
   "type": "module",
-  "description": "London Now Build 1 with live TfL status.",
+  "description": "London Now Build 2 with live TfL and Met Office weather.",
   "scripts": {
     "check": "node --check public/app.js && node --check worker/index.js && node scripts/validate.mjs && node --test tests/*.test.mjs",
     "dev": "wrangler dev",

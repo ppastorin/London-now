@@ -1,43 +1,60 @@
-# Build 1 validation — live TfL
+# Build 2 validation — Met Office weather
+
+## Credentials and configuration
+
+- [ ] Global Spot free plan is active in Weather DataHub.
+- [ ] `METOFFICE_API_KEY` exists as an encrypted Cloudflare secret.
+- [ ] No API key appears in GitHub, browser source, API responses or logs.
+- [ ] `WEATHER_CACHE` KV binding exists after preview deployment.
+- [ ] Hourly cron trigger is visible after production deployment.
 
 ## Automated package checks
 
 - [ ] `npm install` completes.
-- [ ] `npm run check` passes syntax, configuration, fixture and normalisation tests.
-- [ ] No key, token or credential is present in GitHub.
+- [ ] `npm run check` passes configuration, TfL and Met Office fixture tests.
+- [ ] Wrangler remains pinned and the Worker name remains `london-now`.
 
-## Preview API
+## Preview APIs
 
-- [ ] `/api/health` returns HTTP 200 and version `0.2.0`.
-- [ ] `/api/tfl` returns HTTP 200 and a non-empty `lines` array.
-- [ ] `checkedAt` is a valid recent timestamp.
-- [ ] A second request normally returns `x-cache: HIT`.
-- [ ] The response contains no `app_key`, subscription key or full upstream payload.
-- [ ] An invalid/unavailable upstream produces HTTP 502 JSON rather than HTML or an endless request.
+- [ ] `/api/health` returns HTTP 200, version `0.3.0`, TfL `live` and weather `ready`.
+- [ ] `/api/weather` returns HTTP 200 and provider `Met Office Weather DataHub`.
+- [ ] Weather response contains at least today and the next two dates.
+- [ ] Temperatures and percentages are plausible numeric values or explicit nulls.
+- [ ] `fetchedAt` is a valid timestamp and `stale` is false.
+- [ ] Repeated weather requests do not repeatedly call the Met Office.
+- [ ] `/api/tfl` continues to pass the Build 1 checks.
 
 ## Preview interface
 
-- [ ] No Phase 0 sample alert, sample weather value, invented airport delay or invented event remains.
-- [ ] TfL disruptions appear before good-service lines.
-- [ ] When no disruption is reported, the card says good service without fabricating details.
-- [ ] The visible TfL timestamp uses London time.
-- [ ] TfL errors replace the loader and preserve the official TfL link.
-- [ ] Weather says not connected and links to Met Office/BBC.
-- [ ] National Rail, airports and events remain explicit link-only states.
+- [ ] Weather loading state always resolves to data or a clear error.
+- [ ] Today, tomorrow and following-day buttons show the correct dates.
+- [ ] High, low, rain and wind values match the selected day.
+- [ ] Missing values show an em dash rather than zero or invented data.
+- [ ] Delayed data is explicitly labelled update delayed.
+- [ ] Official Met Office and BBC links remain visible.
+- [ ] TfL remains usable when weather is unavailable.
 
-## Responsive/accessibility regression
+## Plausibility comparison
+
+- [ ] Today's condition broadly agrees with the linked Met Office forecast.
+- [ ] High/low temperatures are not reversed.
+- [ ] Rain probability stays between 0 and 100.
+- [ ] Wind is displayed in mph and is within a plausible range.
+- [ ] Forecast location is London or the nearest returned Met Office site.
+
+## Responsive and embed regression
 
 - [ ] No horizontal overflow at 320, 390, 768 and 1280 px.
-- [ ] TfL status text wraps without covering the line name.
-- [ ] View tabs, date controls and settings remain keyboard accessible.
-- [ ] Live updates are announced through the existing polite live regions.
-- [ ] Preferences persist after reload.
-- [ ] Google Sites embed still scrolls once and opens full screen correctly.
+- [ ] Long location/condition text wraps cleanly.
+- [ ] Date changes work by keyboard and touch.
+- [ ] Google Sites embed retains a single usable vertical scroll path.
+- [ ] Full-screen link still opens the same Worker.
 
-## Production gate
+## Production and scheduled-refresh gate
 
-- [ ] Preview branch deployment passed before merge.
-- [ ] Production `/api/health`, `/api/tfl` and `/` passed after merge.
-- [ ] Cloudflare build log has no Worker-name mismatch.
-- [ ] Previous Phase 0 deployment remains available for rollback.
-- [ ] Approved commit is tagged `phase-1-tfl-approved`.
+- [ ] Preview passed before merge.
+- [ ] Production health, weather, TfL and homepage passed after merge.
+- [ ] Scheduled execution refreshed `fetchedAt` within 70 minutes.
+- [ ] Weather remains non-stale after the scheduled refresh.
+- [ ] Build 1 remains available for rollback.
+- [ ] Approved commit is tagged `phase-2-weather-approved`.

@@ -11,6 +11,7 @@ const required = [
   "public/assets/london-map.webp",
   "worker/index.js",
   "tests/tfl.test.mjs",
+  "tests/weather.test.mjs",
   "wrangler.jsonc"
 ];
 
@@ -24,7 +25,7 @@ const packageJson = JSON.parse(await readFile(resolve(root, "package.json"), "ut
 const worker = await readFile(resolve(root, "worker/index.js"), "utf8");
 
 const assertions = [
-  [html.includes("Live build 1"), "live-build scope notice is present"],
+  [html.includes("Live build 2"), "live-build scope notice is present"],
   [!html.match(/18°|Sample alert|illustrative listing/i), "invented operational values are absent"],
   [html.includes('./styles.css'), "stylesheet reference is present"],
   [html.includes('./app.js'), "script reference is present"],
@@ -38,7 +39,12 @@ const assertions = [
   [wrangler.assets?.binding === "ASSETS", "static asset binding is configured"],
   [wrangler.assets?.run_worker_first?.includes("/api/*"), "API routes run through the Worker"],
   [worker.includes("api.tfl.gov.uk") && worker.includes("/api/tfl"), "TfL adapter and endpoint are present"],
+  [worker.includes("data.hub.api.metoffice.gov.uk") && worker.includes("/api/weather"), "Met Office adapter and endpoint are present"],
   [!worker.match(/app_key\s*[:=]\s*["'][^"']+["']/i), "no TfL key is committed"],
+  [!worker.match(/METOFFICE_API_KEY\s*[:=]\s*["'][^"']+["']/), "no Met Office key is committed"],
+  [wrangler.kv_namespaces?.some((item) => item.binding === "WEATHER_CACHE" && !item.id), "weather KV is configured for automatic provisioning"],
+  [wrangler.triggers?.crons?.includes("7 * * * *"), "hourly weather refresh is configured"],
+  [packageJson.version === "0.3.0", "package version is 0.3.0"],
   [packageJson.devDependencies?.wrangler === "4.129.0", "Wrangler version is pinned"]
 ];
 
@@ -49,4 +55,4 @@ if (failures.length) {
 }
 
 assertions.forEach(([, label]) => console.log(`PASS: ${label}`));
-console.log("Build 1 live-TfL package validation passed.");
+console.log("Build 2 live-weather package validation passed.");

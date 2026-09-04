@@ -28,8 +28,8 @@
   </header>
 
   <div class="demo-banner" role="status">
-    <strong>Live build 1</strong>
-    <span>TfL line status is live. Weather, airport access and events remain official-link services until their own builds are validated.</span>
+    <strong>Live build 2</strong>
+    <span>TfL line status and Met Office forecasts are live. National Rail, airport access and events remain official-link services.</span>
   </div>
 
   <main id="dashboard" class="page-shell">
@@ -58,17 +58,22 @@
     </section>
 
     <div class="dashboard-grid">
-      <article class="card card--weather" data-card data-views="now">
+      <article class="card card--weather is-loading" id="weatherCard" data-card data-views="now" aria-live="polite" aria-busy="true">
         <header class="card-header">
           <div>
-            <p class="card-kicker">Weather · next build</p>
-            <h2>Not connected yet</h2>
+            <p class="card-kicker" id="weatherKicker">Weather · checking</p>
+            <h2 id="weatherTitle">London forecast</h2>
           </div>
-          <span class="weather-mark weather-mark--pending" aria-hidden="true">—°</span>
+          <span class="weather-mark weather-mark--pending" id="weatherTemp" aria-label="Temperature unavailable">—°</span>
         </header>
-        <p class="weather-summary">Build 2 will use the Met Office Weather DataHub. Until then, use the official forecasts below.</p>
+        <p class="weather-summary" id="weatherSummary">Loading the Met Office forecast…</p>
+        <div class="metric-row" id="weatherMetrics" aria-label="Forecast details">
+          <span><strong id="weatherLow">—</strong> low</span>
+          <span><strong id="weatherRain">—</strong> rain</span>
+          <span><strong id="weatherWind">—</strong> wind</span>
+        </div>
         <footer class="source-row">
-          <span>No forecast displayed</span>
+          <span id="weatherFreshness">Waiting for Met Office</span>
           <span class="source-links">
             <a href="https://weather.metoffice.gov.uk/forecast/gcpvj0v07" target="_blank" rel="noreferrer">Met Office ↗</a>
             <a href="https://www.bbc.co.uk/weather/2643743" target="_blank" rel="noreferrer">BBC ↗</a>
@@ -179,14 +184,14 @@
     <section class="phase-note" aria-labelledby="phaseNoteTitle">
       <div>
         <p class="card-kicker">Build status</p>
-        <h2 id="phaseNoteTitle">Build 1: TfL is live.</h2>
+        <h2 id="phaseNoteTitle">Build 2: TfL and weather are live.</h2>
       </div>
-      <p>The Worker fetches and normalises TfL status server-side, caches it briefly and keeps official fallbacks visible. Weather becomes live only in Build 2 after its API key is configured.</p>
+      <p>The Worker refreshes the Met Office forecast hourly into a global KV cache, protecting the free API allowance. Stale and unavailable states remain visible rather than silently presenting old data.</p>
     </section>
   </main>
 
   <footer class="site-footer">
-    <span>London Now · Live build 1</span>
+    <span>London Now · Live build 2</span>
     <span>Always confirm journeys with the official operator before travelling.</span>
   </footer>
 
