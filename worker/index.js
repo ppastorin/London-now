@@ -21,13 +21,14 @@ export default {
           : "ready";
       return json({
         status: weatherState === "ready" ? "ok" : "configuration-required",
-        version: "0.3.1",
-        integrations: { tfl: "live", weather: weatherState },
+        version: "0.3.2",
+        integrations: { tfl: "live", weather: weatherState, airportAccess: "partial-live" },
         checkedAt: new Date().toISOString()
       }, weatherState === "ready" ? 200 : 503, { "cache-control": "no-store" });
     }
 
     if (url.pathname === "/api/tfl") return handleTfl(request, env, context);
+    if (url.pathname === "/api/airport-access") return handleAirportAccess(request, env, context);
     if (url.pathname === "/api/weather") return handleWeather(env);
 
     if (url.pathname.startsWith("/api/")) return json({ error: "Not found" }, 404);
@@ -42,6 +43,10 @@ export default {
 };
 
 async function handleTfl(request, env, context) {
+  return getTflResponse(request, env, context);
+}
+
+async function getTflResponse(request, env, context) {
   const cache = caches.default;
   const cacheKey = new Request(new URL("/__cache/tfl", request.url).toString(), { method: "GET" });
   const cached = await cache.match(cacheKey);
@@ -66,6 +71,24 @@ async function handleTfl(request, env, context) {
   } catch (error) {
     return upstreamError("TfL status is temporarily unavailable", error, "Transport for London", "https://tfl.gov.uk/tube-dlr-overground/status/");
   }
+}
+
+async function handleAirportAccess(request, env, context) {
+  const tflResponse = await getTflResponse(request, env, context);
+  if (!tflResponse.ok) {
+    return json({
+      error: "Live airport access is temporarily unavailable",
+      provider: "Transport for London",
+      sourceUrl: "https://tfl.gov.uk/plan-a-journey/",
+      checkedAt: new Date().toISOString()
+    }, 502, { "cache-control": "no-store" });
+  }
+
+  const tfl = await tflResponse.clone().json();
+  return json(normalizeAirportAccess(tfl), 200, {
+    "cache-control": `public, max-age=30, s-maxage=${TFL_CACHE_SECONDS}`,
+    "x-cache": tflResponse.headers.get("x-cache") || "MISS"
+  });
 }
 
 async function handleWeather(env) {
@@ -151,6 +174,55 @@ export function normalizeTfl(payload, checkedAt = new Date().toISOString()) {
       : "Good service reported on all included lines",
     disruptionCount: disruptions.length,
     lines
+  };
+}
+
+export function normalizeAirportAccess(tfl, checkedAt = tfl?.checkedAt || new Date().toISOString()) {
+  if (!Array.isArray(tfl?.lines)) throw new TypeError("Unexpected TfL airport-access input");
+
+  const findLine = (name) => tfl.lines.find((line) => line.name.toLowerCase() === name.toLowerCase());
+  const liveRoute = (name) => {
+    const line = findLine(name);
+    return line
+      ? { name, provider: "TfL", live: true, disrupted: Boolean(line.disrupted), status: line.status }
+      : { name, provider: "TfL", live: false, disrupted: null, status: "Status unavailable" };
+  };
+  const pendingRail = (name) => ({
+    name,
+    provider: "National Rail",
+    live: false,
+    disrupted: null,
+    status: "Awaiting Rail Data Marketplace access"
+  });
+  const summarise = (code, name, routes, coverage) => {
+    const live = routes.filter((route) => route.live);
+    const disrupted = live.filter((route) => route.disrupted);
+    const status = disrupted.length ? "disruption" : live.length ? "good" : "pending";
+    const label = disrupted.length
+      ? `${disrupted.map((route) => route.name).join(" and ")} disruption`
+      : coverage === "live"
+        ? "Live route clear"
+        : live.length
+          ? "TfL routes clear"
+          : "Rail feed pending";
+
+    return { code, name, status, coverage, label, routes };
+  };
+
+  const airports = [
+    summarise("LHR", "Heathrow", [liveRoute("Elizabeth line"), liveRoute("Piccadilly"), pendingRail("Heathrow Express")], "partial"),
+    summarise("LGW", "Gatwick", [pendingRail("Gatwick Express"), pendingRail("Southern"), pendingRail("Thameslink")], "pending"),
+    summarise("LTN", "Luton", [pendingRail("Thameslink"), pendingRail("East Midlands Railway")], "pending"),
+    summarise("STN", "Stansted", [pendingRail("Stansted Express / Greater Anglia")], "pending"),
+    summarise("LCY", "London City", [liveRoute("DLR")], "live")
+  ];
+
+  return {
+    provider: "Transport for London",
+    sourceUrl: "https://tfl.gov.uk/plan-a-journey/",
+    checkedAt,
+    scope: "Surface and public-transport access only; not flight operations",
+    airports
   };
 }
 

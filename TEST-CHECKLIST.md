@@ -1,66 +1,43 @@
-# Build 2.1 validation — Google Sites frame fix
-
-## Google Sites framing correction
-
-- [ ] `Content-Security-Policy` includes `https://www.gstatic.com` in `frame-ancestors`.
-- [ ] The existing HTML-code embed renders on the published Google Sites page.
-- [ ] The browser no longer displays `london-now.ppastorin.workers.dev refused to connect`.
-
-## Credentials and configuration
-
-- [ ] Global Spot free plan is active in Weather DataHub.
-- [ ] `METOFFICE_API_KEY` exists as an encrypted Cloudflare secret.
-- [ ] No API key appears in GitHub, browser source, API responses or logs.
-- [ ] `WEATHER_CACHE` KV binding exists after preview deployment.
-- [ ] Hourly cron trigger is visible after production deployment.
+# Build 2.2 validation — partial live airport access
 
 ## Automated package checks
 
 - [ ] `npm install` completes.
-- [ ] `npm run check` passes configuration, TfL and Met Office fixture tests.
+- [ ] `npm run check` passes all assertions and fixture tests.
 - [ ] Wrangler remains pinned and the Worker name remains `london-now`.
+- [ ] No API key appears in GitHub, browser source, responses or logs.
 
-## Preview APIs
+## API checks
 
-- [ ] `/api/health` returns HTTP 200, version `0.3.1`, TfL `live` and weather `ready`.
-- [ ] `/api/weather` returns HTTP 200 and provider `Met Office Weather DataHub`.
-- [ ] Weather response contains at least today and the next two dates.
-- [ ] Temperatures and percentages are plausible numeric values or explicit nulls.
-- [ ] `fetchedAt` is a valid timestamp and `stale` is false.
-- [ ] Repeated weather requests do not repeatedly call the Met Office.
-- [ ] `/api/tfl` continues to pass the Build 1 checks.
+- [ ] `/api/health` returns HTTP 200, version `0.3.2` and `airportAccess: partial-live`.
+- [ ] `/api/tfl` returns HTTP 200 with a non-empty line array.
+- [ ] `/api/weather` returns HTTP 200 with current forecast data.
+- [ ] `/api/airport-access` returns HTTP 200.
+- [ ] Airport access contains exactly LHR, LGW, LTN, STN and LCY.
+- [ ] LHR reports Elizabeth and Piccadilly status, with Heathrow Express pending.
+- [ ] LCY reports DLR status.
+- [ ] LGW, LTN and STN say `Rail feed pending`; they do not claim good service.
+- [ ] Scope says public-transport access, not flight operations.
 
-## Preview interface
+## Interface checks
 
-- [ ] Weather loading state always resolves to data or a clear error.
-- [ ] Today, tomorrow and following-day buttons show the correct dates.
-- [ ] High, low, rain and wind values match the selected day.
-- [ ] Missing values show an em dash rather than zero or invented data.
-- [ ] Delayed data is explicitly labelled update delayed.
-- [ ] Official Met Office and BBC links remain visible.
-- [ ] TfL remains usable when weather is unavailable.
-
-## Plausibility comparison
-
-- [ ] Today's condition broadly agrees with the linked Met Office forecast.
-- [ ] High/low temperatures are not reversed.
-- [ ] Rain probability stays between 0 and 100.
-- [ ] Wind is displayed in mph and is within a plausible range.
-- [ ] Forecast location is London or the nearest returned Met Office site.
+- [ ] Heathrow and London City leave the loading state.
+- [ ] A reported TfL disruption produces a visible warning for the affected airport.
+- [ ] Official flight-board links open in a new tab.
+- [ ] Custom airport selection hides both the status row and corresponding board link.
+- [ ] Airport states resolve to live data or a clear error—never an endless spinner.
 
 ## Responsive and embed regression
 
 - [ ] No horizontal overflow at 320, 390, 768 and 1280 px.
-- [ ] Long location/condition text wraps cleanly.
-- [ ] Date changes work by keyboard and touch.
-- [ ] Google Sites embed retains a single usable vertical scroll path.
-- [ ] Full-screen link still opens the same Worker.
+- [ ] Long airport service names wrap cleanly.
+- [ ] The existing published Google Sites embed loads without changing its code.
+- [ ] Google Sites retains one usable vertical scrolling path.
+- [ ] Full-screen mode remains usable.
 
-## Production and scheduled-refresh gate
+## Production gate
 
 - [ ] Preview passed before merge.
-- [ ] Production health, weather, TfL and homepage passed after merge.
-- [ ] Scheduled execution refreshed `fetchedAt` within 70 minutes.
-- [ ] Weather remains non-stale after the scheduled refresh.
-- [ ] Build 1 remains available for rollback.
-- [ ] Approved commit is tagged `phase-2-weather-approved`.
+- [ ] Production health, TfL, weather, airport access and homepage passed after merge.
+- [ ] Existing weather secret, KV binding and hourly trigger remain present.
+- [ ] Approved commit is tagged `phase-2-2-airport-access-approved`.

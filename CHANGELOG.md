@@ -1,5 +1,14 @@
 # Changelog
 
+## 0.3.2 — 4 September 2026
+
+- Added `/api/airport-access`, derived from the already-approved TfL feed.
+- Added live access status for Heathrow via the Elizabeth and Piccadilly lines.
+- Added live London City access status via the DLR.
+- Added explicit pending states for Gatwick, Luton and Stansted until National Rail API access is approved.
+- Kept official flight-board links and prevented access conditions being presented as flight status.
+- Added airport-access normalization and disclosure tests.
+
 ## 0.3.1 — 4 September 2026
 
 - Added `https://www.gstatic.com` to the `frame-ancestors` policy used by Google Sites' nested custom-code embed.

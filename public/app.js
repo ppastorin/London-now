@@ -154,6 +154,55 @@
     }
   }
 
+  async function loadAirportAccess() {
+    const list = document.querySelector("#airportList");
+    const freshness = document.querySelector("#airportFreshness");
+
+    try {
+      const response = await fetch("./api/airport-access", { headers: { accept: "application/json" } });
+      const data = await response.json();
+      if (!response.ok) throw new Error(data.error || `HTTP ${response.status}`);
+
+      list.replaceChildren(...data.airports.map(createAirportRow));
+      list.setAttribute("aria-busy", "false");
+      freshness.textContent = `Access checked ${formatTime(data.checkedAt)}`;
+      applyPreferences();
+    } catch (error) {
+      list.replaceChildren();
+      const row = document.createElement("li");
+      row.className = "airport-row airport-row--error";
+      const copy = document.createElement("span");
+      const title = document.createElement("strong");
+      const detail = document.createElement("small");
+      title.textContent = "Live access unavailable";
+      detail.textContent = error instanceof Error ? error.message : "Temporary data error";
+      copy.append(title, detail);
+      row.append(copy);
+      list.append(row);
+      list.setAttribute("aria-busy", "false");
+      freshness.textContent = "Live check failed · use Journey Planner";
+    }
+  }
+
+  function createAirportRow(airport) {
+    const row = document.createElement("li");
+    row.className = `airport-row airport-row--${airport.status}`;
+    row.dataset.airport = airport.code;
+
+    const identity = document.createElement("span");
+    const title = document.createElement("strong");
+    const detail = document.createElement("small");
+    title.textContent = `${airport.code} · ${airport.name}`;
+    detail.textContent = airport.routes.map((route) => `${route.name}: ${route.status}`).join(" · ");
+    identity.append(title, detail);
+
+    const status = document.createElement("span");
+    status.className = `status-text ${airport.status === "good" ? "status-text--good" : airport.status === "disruption" ? "status-text--warn" : ""}`;
+    status.textContent = airport.label;
+    row.append(identity, status);
+    return row;
+  }
+
   function createLineRow(line) {
     const item = document.createElement("li");
     const dot = document.createElement("span");
@@ -311,6 +360,8 @@
   applyView();
   loadTfl();
   loadWeather();
+  loadAirportAccess();
   window.setInterval(loadTfl, 90_000);
   window.setInterval(loadWeather, 5 * 60_000);
+  window.setInterval(loadAirportAccess, 90_000);
 })();

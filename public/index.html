@@ -5,7 +5,7 @@
   <meta name="viewport" content="width=device-width, initial-scale=1">
   <meta name="theme-color" content="#f4efe6">
   <meta name="description" content="London Now — a compact London travel dashboard prototype from London Advanced.">
-  <title>London Now · Phase 0</title>
+  <title>London Now · Live London dashboard</title>
   <link rel="stylesheet" href="./styles.css">
   <script src="./app.js" defer></script>
 </head>
@@ -28,8 +28,8 @@
   </header>
 
   <div class="demo-banner" role="status">
-    <strong>Live build 2</strong>
-    <span>TfL line status and Met Office forecasts are live. National Rail, airport access and events remain official-link services.</span>
+    <strong>Live build 2.2</strong>
+    <span>TfL, Met Office weather and selected airport access routes are live. National Rail approval is pending.</span>
   </div>
 
   <main id="dashboard" class="page-shell">
@@ -126,17 +126,13 @@
       <article class="card card--airports" data-card data-views="now flights">
         <header class="card-header">
           <div>
-            <p class="card-kicker">Airports · official links</p>
-            <h2>Your airports</h2>
+            <p class="card-kicker">Getting to airports · live/partial</p>
+            <h2>Airport access</h2>
           </div>
           <button class="inline-control" type="button" data-open-settings>Change</button>
         </header>
-        <ul class="airport-list" id="airportList">
-          <li data-airport="LHR"><span><strong>LHR</strong> Heathrow</span><span class="status-text">Official board below</span></li>
-          <li data-airport="LGW"><span><strong>LGW</strong> Gatwick</span><span class="status-text">Official board below</span></li>
-          <li data-airport="LTN"><span><strong>LTN</strong> Luton</span><span class="status-text">Official board below</span></li>
-          <li data-airport="STN"><span><strong>STN</strong> Stansted</span><span class="status-text">Official board below</span></li>
-          <li data-airport="LCY"><span><strong>LCY</strong> London City</span><span class="status-text">Official board below</span></li>
+        <ul class="airport-list" id="airportList" aria-live="polite" aria-busy="true">
+          <li class="loading-row"><span class="loading-bar"></span><span>Checking airport access routes…</span></li>
         </ul>
         <div class="official-boards" aria-label="Official airport flight boards">
           <a data-airport-link="LHR" href="https://www.heathrow.com/arrivals" target="_blank" rel="noreferrer">LHR board ↗</a>
@@ -146,7 +142,7 @@
           <a data-airport-link="LCY" href="https://www.londoncityairport.com/flight-information" target="_blank" rel="noreferrer">LCY board ↗</a>
         </div>
         <footer class="source-row">
-          <span>No inferred delay status</span>
+          <span id="airportFreshness">Waiting for TfL</span>
           <a href="https://tfl.gov.uk/plan-a-journey/" target="_blank" rel="noreferrer">Journey Planner ↗</a>
         </footer>
       </article>
@@ -184,14 +180,14 @@
     <section class="phase-note" aria-labelledby="phaseNoteTitle">
       <div>
         <p class="card-kicker">Build status</p>
-        <h2 id="phaseNoteTitle">Build 2: TfL and weather are live.</h2>
+        <h2 id="phaseNoteTitle">Build 2.2: airport access has started.</h2>
       </div>
-      <p>The Worker refreshes the Met Office forecast hourly into a global KV cache, protecting the free API allowance. Stale and unavailable states remain visible rather than silently presenting old data.</p>
+      <p>Heathrow and London City access use live TfL status. Gatwick, Luton and Stansted remain clearly marked pending until National Rail approves API access. Flight operations are never inferred from transport conditions.</p>
     </section>
   </main>
 
   <footer class="site-footer">
-    <span>London Now · Live build 2</span>
+    <span>London Now · Live build 2.2</span>
     <span>Always confirm journeys with the official operator before travelling.</span>
   </footer>
 
@@ -232,7 +228,7 @@
         <input type="checkbox" id="stepFreeToggle" name="stepFree" checked>
       </label>
 
-      <p class="privacy-note">Preferences stay only in this browser. Phase 0 sends no personal data.</p>
+      <p class="privacy-note">Preferences stay only in this browser and are not sent to London Advanced.</p>
       <div class="dialog-actions">
         <button class="button button--quiet" id="resetSettings" type="button">Reset</button>
         <button class="button button--dark" type="submit">Save preferences</button>

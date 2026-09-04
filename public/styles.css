@@ -384,7 +384,24 @@ h2 {
 }
 
 .status-list li { grid-template-columns: auto 1fr auto; }
-.airport-list li { grid-template-columns: 1fr auto; }
+.airport-list li { grid-template-columns: minmax(0, 1fr) auto; }
+
+.airport-list small {
+  display: block;
+  max-width: 44ch;
+  margin-top: 3px;
+  color: var(--muted);
+  font-size: 12px;
+  line-height: 1.35;
+}
+
+.airport-row .status-text {
+  max-width: 9rem;
+  text-align: right;
+}
+
+.airport-row--pending { opacity: 0.78; }
+.airport-row--error { grid-template-columns: 1fr !important; }
 .event-list li { grid-template-columns: 55px 1fr; }
 
 .status-list small,
@@ -630,6 +647,16 @@ select {
   .card--travel,
   .card--pick,
   .card--airports { grid-column: 1 / -1; }
+
+  .airport-list li {
+    grid-template-columns: 1fr;
+    gap: 6px;
+  }
+
+  .airport-row .status-text {
+    max-width: none;
+    text-align: left;
+  }
   .metric-row span { padding: 9px 5px; font-size: 13px; }
   .source-row { align-items: flex-start; flex-direction: column; }
   .source-links { align-items: flex-start; flex-wrap: wrap; }
