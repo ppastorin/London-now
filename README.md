@@ -1,6 +1,18 @@
-# London Now — Phase 0
+# London Now — Phase 0 v0.1.1
 
 This is the static, zero-API prototype for the London Advanced real-time dashboard. It is designed to validate the information hierarchy, responsive layout, Google Sites embed and light customisation before any live data integration begins.
+
+## Existing deployment: corrective update
+
+If `https://london-now.ppastorin.workers.dev` has already been deployed, **do not create another Worker**. Version 0.1.1 aligns the repository with that existing Cloudflare project:
+
+- Cloudflare Worker name: `london-now`
+- `wrangler.jsonc` name: `london-now`
+- Production URL: `https://london-now.ppastorin.workers.dev`
+- `workers.dev` and preview URLs: explicitly enabled
+- Wrangler: pinned to version `4.129.0`
+
+Replace the files in the existing GitHub repository with this corrected package and commit them. The connected Cloudflare build will redeploy the same Worker. A successful build must no longer contain `Failed to match Worker name`.
 
 ## What is included
 
@@ -74,42 +86,90 @@ Use `TEST-CHECKLIST.md`. The key checks are:
 6. Open each external source in a new tab.
 7. Test narrow phone widths and keyboard-only navigation.
 
-## 4. Put the package in GitHub
+## 4. Create the GitHub repository first
 
-Create a new empty GitHub repository named `london-now-dashboard`. Do not initialise it with a README or licence because this package already contains files.
+Use one stable name across GitHub, Cloudflare and Wrangler: `london-now`. The names are technically allowed to differ, but doing so makes deployment configuration easier to get wrong and provides no benefit here.
 
-Then run from the project folder, replacing the example account name:
+### GitHub website method
+
+1. Sign in to GitHub and select **New repository**.
+2. Repository name: `london-now`.
+3. Choose **Private** for Phase 0 unless you specifically want the source public.
+4. Do not add a README, `.gitignore` or licence; these are already included.
+5. Select **Create repository**.
+6. On the empty repository page, select **uploading an existing file**.
+7. Open the unzipped `london-now-phase-0` folder on your computer.
+8. Upload the **contents inside that folder**—`public`, `scripts`, `package.json`, `wrangler.jsonc`, `README.md`, `TEST-CHECKLIST.md` and `.gitignore`—not the enclosing folder itself.
+9. Commit directly to `main` with the message `Add London Now Phase 0`.
+
+The repository root must look like this:
+
+```text
+london-now/
+├── public/
+│   ├── assets/
+│   ├── _headers
+│   ├── app.js
+│   ├── index.html
+│   └── styles.css
+├── scripts/
+├── package.json
+├── wrangler.jsonc
+├── README.md
+└── TEST-CHECKLIST.md
+```
+
+If GitHub shows `london-now-phase-0/public/index.html`, the package was uploaded one directory too deep. Cloudflare's root directory would then need changing. Move the files to the repository root instead.
+
+### Command-line alternative
+
+Run from inside the unzipped `london-now-phase-0` folder, replacing the example account name:
 
 ```bash
 git init
 git branch -M main
 git add .
 git commit -m "Add London Now Phase 0 prototype"
-git remote add origin https://github.com/YOUR-GITHUB-ACCOUNT/london-now-dashboard.git
+git remote add origin https://github.com/YOUR-GITHUB-ACCOUNT/london-now.git
 git push -u origin main
 ```
 
 Keep the repository private during Phase 0 if desired. Cloudflare's GitHub app can be granted access to one selected repository.
 
-## 5. Deploy with Cloudflare Workers Builds
+## 5. Create and connect the Cloudflare Worker
 
 This package uses Cloudflare Workers static assets, which is suitable for the free tier and does not require a Worker script.
 
-1. In Cloudflare, open **Workers & Pages** and choose **Create application**.
-2. Select the option to import or connect a Git repository.
-3. Connect GitHub and grant the Cloudflare Workers & Pages app access to `london-now-dashboard` only.
-4. Select the `main` branch.
-5. Use these build settings:
+1. In Cloudflare, open **Workers & Pages**.
+2. Select **Create application**.
+3. Next to **Import a repository**, select **Get started**.
+4. Select the GitHub account and the `london-now` repository. If it is missing, configure the Cloudflare Workers & Pages GitHub app to access this repository.
+5. Set the Cloudflare project/Worker name to **exactly** `london-now`. This must match `"name": "london-now"` in `wrangler.jsonc`.
+6. Select `main` as the production branch.
+7. Use these build settings:
 
    - Root directory: `/`
    - Build command: `npm run check`
-   - Deploy command: `npx wrangler@latest deploy`
+   - Deploy command: `npm run deploy`
 
-6. Deploy. Cloudflare reads `wrangler.jsonc` and publishes the `public` directory.
-7. Open the assigned `https://london-now-phase-0.<account>.workers.dev` address.
-8. Push a small test change to GitHub and confirm Cloudflare automatically creates a new deployment.
+8. Select **Save and Deploy**. Cloudflare reads `wrangler.jsonc` and publishes the `public` directory.
+9. Open `https://london-now.ppastorin.workers.dev`.
+10. Future commits to `main` will automatically build and deploy to the same Worker.
 
-If the project name is already taken in your Cloudflare account, edit the `name` value in `wrangler.jsonc`, commit and push before retrying.
+The Worker name and the Wrangler `name` must match before the repository is connected. Cloudflare currently attempts to override some mismatches and may open a corrective pull request, but that leaves the dashboard configuration—not the repository—as the effective source of truth.
+
+### If the Worker already exists
+
+For the deployment already created at `london-now.ppastorin.workers.dev`:
+
+1. Do not create another application.
+2. Open the existing **london-now** Worker.
+3. Go to **Settings → Builds**.
+4. Confirm the connected repository and production branch are correct.
+5. In GitHub, replace the repository contents with v0.1.1 and commit to `main`.
+6. Cloudflare will start a new build automatically.
+7. Open its build log and confirm that the name-mismatch warning is gone.
+8. Confirm the final line still reports `https://london-now.ppastorin.workers.dev`.
 
 Official references:
 
@@ -122,7 +182,7 @@ Official references:
 Replace the example address:
 
 ```bash
-curl -I https://london-now-phase-0.YOUR-SUBDOMAIN.workers.dev
+curl -I https://london-now.ppastorin.workers.dev
 ```
 
 Confirm the response includes `content-security-policy`, `referrer-policy` and `x-content-type-options`, and does **not** include `x-frame-options`.

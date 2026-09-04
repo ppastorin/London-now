@@ -1,11 +1,14 @@
 {
   "name": "london-now-phase-0",
-  "version": "0.1.0",
+  "version": "0.1.1",
   "private": true,
   "description": "Phase 0 static prototype for the London Now dashboard.",
   "scripts": {
     "check": "node --check public/app.js && node scripts/validate.mjs",
-    "dev": "npx wrangler@latest dev",
-    "deploy": "npx wrangler@latest deploy"
+    "dev": "wrangler dev",
+    "deploy": "wrangler deploy"
+  },
+  "devDependencies": {
+    "wrangler": "4.129.0"
   }
 }
