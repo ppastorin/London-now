@@ -248,6 +248,15 @@ h2 {
   text-underline-offset: 3px;
 }
 
+.alert-strip--good {
+  background: var(--green-soft);
+  border-color: color-mix(in srgb, var(--green) 28%, transparent);
+}
+
+.alert-strip--good .alert-label { background: var(--green); }
+.alert-strip--error { border-style: dashed; }
+.is-loading { opacity: 0.78; }
+
 .dashboard-grid {
   display: grid;
   grid-template-columns: repeat(12, minmax(0, 1fr));
@@ -353,6 +362,7 @@ h2 {
 }
 
 .status-chip--mixed { background: var(--amber-soft); color: var(--amber); }
+.status-chip--good { background: var(--green-soft); color: var(--green); }
 .date-badge { background: var(--paper-deep); }
 
 .status-list,
@@ -394,6 +404,37 @@ h2 {
 .mode-dot--tube { background: #d6292f; }
 .mode-dot--rail { background: #254b9b; }
 .mode-dot--access { background: #138bb5; }
+.mode-dot--good { background: var(--green); }
+
+.status-list--secondary { margin-top: -8px; }
+
+.loading-row {
+  grid-template-columns: 46px 1fr !important;
+  color: var(--muted);
+}
+
+.loading-bar {
+  height: 9px;
+  border-radius: 999px;
+  background: linear-gradient(90deg, var(--paper-deep), var(--line), var(--paper-deep));
+  background-size: 200% 100%;
+  animation: loading 1.4s linear infinite;
+}
+
+.empty-state {
+  min-height: 118px;
+  margin-bottom: 20px;
+  padding: 18px;
+  border: 1px dashed var(--line);
+  border-radius: 12px;
+  color: var(--muted);
+}
+
+.weather-mark--pending { color: var(--muted); }
+
+@keyframes loading {
+  to { background-position: -200% 0; }
+}
 
 .status-text { color: var(--muted); font-size: 13px; font-weight: 800; }
 .status-text--good { color: var(--green); }
