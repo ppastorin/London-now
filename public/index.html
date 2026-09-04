@@ -4,7 +4,7 @@
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width, initial-scale=1">
   <meta name="theme-color" content="#ffffff">
-  <meta name="description" content="London Now — a compact London travel dashboard prototype from London Advanced.">
+  <meta name="description" content="London Now — live London weather, transport, airport access and events from London Advanced.">
   <title>London Now · Live London dashboard</title>
   <link rel="stylesheet" href="./styles.css">
   <script src="./app.js" defer></script>
@@ -28,8 +28,8 @@
   </header>
 
   <div class="demo-banner" role="status">
-    <strong>Live build 2.4</strong>
-    <span>TfL, Met Office weather and selected airport access routes are live. Official airport departure boards are one click away.</span>
+    <strong>Live build 3</strong>
+    <span>TfL, Met Office weather, Ticketmaster events and selected airport access routes are live.</span>
   </div>
 
   <main id="dashboard" class="page-shell">
@@ -137,18 +137,30 @@
         </footer>
       </article>
 
-      <article class="card card--events" data-card data-views="now events">
+      <article class="card card--events is-loading" id="eventsCard" data-card data-views="now events" aria-live="polite" aria-busy="true">
         <header class="card-header">
           <div>
-            <p class="card-kicker">What’s on · sources</p>
-            <h2>Browse current listings</h2>
+            <p class="card-kicker" id="eventsKicker">What’s on · checking</p>
+            <h2>London events</h2>
           </div>
           <span class="date-badge" id="selectedDateBadge">Today</span>
         </header>
-        <p class="empty-state">Automated event listings are deliberately withheld until a licensed feed is connected. Time Out remains an outbound discovery source.</p>
+        <label class="event-filter" for="eventCategory">
+          <span>Category</span>
+          <select id="eventCategory">
+            <option value="all">All events</option>
+            <option value="music">Music</option>
+            <option value="arts">Theatre &amp; arts</option>
+            <option value="sports">Sport</option>
+            <option value="family">Family</option>
+          </select>
+        </label>
+        <ul class="event-list" id="eventList" aria-busy="true">
+          <li class="loading-row"><span class="loading-bar"></span><span>Finding events in London…</span></li>
+        </ul>
         <footer class="source-row">
-          <span>No scraped listings</span>
-          <a href="https://www.timeout.com/london/things-to-do" target="_blank" rel="noreferrer">Browse Time Out ↗</a>
+          <span id="eventsFreshness">Waiting for Ticketmaster</span>
+          <a href="https://www.ticketmaster.co.uk/discover/london" target="_blank" rel="noreferrer">Ticketmaster ↗</a>
         </footer>
       </article>
 
@@ -171,14 +183,14 @@
     <section class="phase-note" aria-labelledby="phaseNoteTitle">
       <div>
         <p class="card-kicker">Build status</p>
-        <h2 id="phaseNoteTitle">Build 2.4: London Advanced tools unified.</h2>
+        <h2 id="phaseNoteTitle">Build 3: live London events.</h2>
       </div>
-      <p>Heathrow and London City access use live TfL status. Gatwick, Luton and Stansted remain clearly marked pending until National Rail approves API access. All London Advanced tools now use their native website pages from one shortcuts block.</p>
+      <p>Ticketmaster now supplies live, licensed event listings by date and category. Heathrow and London City access use live TfL status; Gatwick, Luton and Stansted remain pending until National Rail approves API access.</p>
     </section>
   </main>
 
   <footer class="site-footer">
-    <span>London Now · Live build 2.4</span>
+    <span>London Now · Live build 3</span>
     <span>Always confirm journeys with the official operator before travelling.</span>
   </footer>
 

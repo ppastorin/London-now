@@ -1,5 +1,15 @@
 # Changelog
 
+## 0.4.0 — 4 September 2026
+
+- Added `/api/events` using the Ticketmaster Discovery API.
+- Added London date and category filters for Music, Theatre & Arts, Sport and Family.
+- Added six-hour server-side event caching to protect the free API allowance.
+- Added explicit loading, empty, configuration and upstream-error states.
+- Preserved unknown prices as `Price unavailable`; missing price data is never presented as free.
+- Added an affiliate-ready URL boundary while keeping standard Ticketmaster links until Impact approval.
+- Added event normalization, cancellation, URL-safety and missing-price regression tests.
+
 ## 0.3.4 — 4 September 2026
 
 - Consolidated all London Advanced destinations into one four-link tools card.

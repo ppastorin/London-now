@@ -1,9 +1,9 @@
 {
   "name": "london-now",
-  "version": "0.3.4",
+  "version": "0.4.0",
   "private": true,
   "type": "module",
-  "description": "London Now with live data, official departure boards and unified London Advanced tool links.",
+  "description": "London Now with live TfL, Met Office weather, airport access and Ticketmaster events.",
   "scripts": {
     "check": "node --check public/app.js && node --check worker/index.js && node scripts/validate.mjs && node --test tests/*.test.mjs",
     "dev": "wrangler dev",

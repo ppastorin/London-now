@@ -1,8 +1,18 @@
 const TFL_STATUS_URL = "https://api.tfl.gov.uk/Line/Mode/tube,dlr,overground,elizabeth-line/Status";
 const MET_OFFICE_DAILY_URL = "https://data.hub.api.metoffice.gov.uk/sitespecific/v0/point/daily";
+const TICKETMASTER_EVENTS_URL = "https://app.ticketmaster.com/discovery/v2/events.json";
 const WEATHER_CACHE_KEY = "metoffice:global-spot:london:daily:v1";
 const TFL_CACHE_SECONDS = 75;
 const WEATHER_STALE_AFTER_MS = 2 * 60 * 60 * 1000;
+const EVENTS_CACHE_SECONDS = 6 * 60 * 60;
+
+const EVENT_CATEGORIES = {
+  all: null,
+  music: "Music",
+  arts: "Arts & Theatre",
+  sports: "Sports",
+  family: "Family"
+};
 
 const BASE_JSON_HEADERS = {
   "content-type": "application/json; charset=utf-8",
@@ -19,17 +29,25 @@ export default {
         : !env.WEATHER_CACHE
           ? "missing-kv"
           : "ready";
+      const eventsState = env.TICKETMASTER_API_KEY ? "ready" : "missing-secret";
+      const configured = weatherState === "ready" && eventsState === "ready";
       return json({
-        status: weatherState === "ready" ? "ok" : "configuration-required",
-        version: "0.3.4",
-        integrations: { tfl: "live", weather: weatherState, airportAccess: "partial-live" },
+        status: configured ? "ok" : "configuration-required",
+        version: "0.4.0",
+        integrations: {
+          tfl: "live",
+          weather: weatherState,
+          airportAccess: "partial-live",
+          events: eventsState
+        },
         checkedAt: new Date().toISOString()
-      }, weatherState === "ready" ? 200 : 503, { "cache-control": "no-store" });
+      }, configured ? 200 : 503, { "cache-control": "no-store" });
     }
 
     if (url.pathname === "/api/tfl") return handleTfl(request, env, context);
     if (url.pathname === "/api/airport-access") return handleAirportAccess(request, env, context);
     if (url.pathname === "/api/weather") return handleWeather(env);
+    if (url.pathname === "/api/events") return handleEvents(request, env, context);
 
     if (url.pathname.startsWith("/api/")) return json({ error: "Not found" }, 404);
     return env.ASSETS.fetch(request);
@@ -44,6 +62,72 @@ export default {
 
 async function handleTfl(request, env, context) {
   return getTflResponse(request, env, context);
+}
+
+async function handleEvents(request, env, context) {
+  if (!env.TICKETMASTER_API_KEY) {
+    return json({
+      error: "Ticketmaster API key is not configured",
+      action: "Add the TICKETMASTER_API_KEY secret in Cloudflare",
+      sourceUrl: "https://developer.ticketmaster.com/"
+    }, 503, { "cache-control": "no-store" });
+  }
+
+  const requestUrl = new URL(request.url);
+  const date = requestUrl.searchParams.get("date") || londonDateKey(new Date());
+  const category = requestUrl.searchParams.get("category") || "all";
+  if (!/^\d{4}-\d{2}-\d{2}$/.test(date) || !isValidDateKey(date)) {
+    return json({ error: "Invalid date; use YYYY-MM-DD" }, 400, { "cache-control": "no-store" });
+  }
+  if (!(category in EVENT_CATEGORIES)) {
+    return json({ error: "Invalid event category" }, 400, { "cache-control": "no-store" });
+  }
+
+  const cache = caches.default;
+  const cacheUrl = new URL("/__cache/events", request.url);
+  cacheUrl.search = new URLSearchParams({ date, category }).toString();
+  const cacheKey = new Request(cacheUrl.toString(), { method: "GET" });
+  const cached = await cache.match(cacheKey);
+  if (cached) return withCacheStatus(cached, "HIT");
+
+  const range = londonDayUtcRange(date);
+  const upstreamUrl = new URL(TICKETMASTER_EVENTS_URL);
+  upstreamUrl.searchParams.set("apikey", env.TICKETMASTER_API_KEY);
+  upstreamUrl.searchParams.set("countryCode", "GB");
+  upstreamUrl.searchParams.set("city", "London");
+  upstreamUrl.searchParams.set("source", "ticketmaster");
+  upstreamUrl.searchParams.set("startDateTime", range.start);
+  upstreamUrl.searchParams.set("endDateTime", range.end);
+  upstreamUrl.searchParams.set("includeTBA", "no");
+  upstreamUrl.searchParams.set("includeTBD", "no");
+  upstreamUrl.searchParams.set("sort", "date,asc");
+  upstreamUrl.searchParams.set("size", "100");
+  if (EVENT_CATEGORIES[category]) {
+    upstreamUrl.searchParams.set("classificationName", EVENT_CATEGORIES[category]);
+  }
+
+  try {
+    const upstream = await fetch(upstreamUrl, {
+      headers: { accept: "application/json" },
+      signal: AbortSignal.timeout(10000)
+    });
+    if (!upstream.ok) throw new Error(`Ticketmaster returned HTTP ${upstream.status}`);
+
+    const events = normalizeTicketmaster(await upstream.json(), date, category);
+    const response = json(events, 200, {
+      "cache-control": `public, max-age=300, s-maxage=${EVENTS_CACHE_SECONDS}`,
+      "x-cache": "MISS"
+    });
+    context.waitUntil(cache.put(cacheKey, response.clone()));
+    return response;
+  } catch (error) {
+    return upstreamError(
+      "London events are temporarily unavailable",
+      error,
+      "Ticketmaster Discovery API",
+      "https://www.ticketmaster.co.uk/discover/london"
+    );
+  }
 }
 
 async function getTflResponse(request, env, context) {
@@ -224,6 +308,137 @@ export function normalizeAirportAccess(tfl, checkedAt = tfl?.checkedAt || new Da
     scope: "Surface and public-transport access only; not flight operations",
     airports
   };
+}
+
+export function normalizeTicketmaster(payload, requestedDate, requestedCategory = "all", checkedAt = new Date().toISOString()) {
+  const rawEvents = payload?._embedded?.events;
+  if (rawEvents != null && !Array.isArray(rawEvents)) {
+    throw new TypeError("Unexpected Ticketmaster response");
+  }
+
+  const events = (rawEvents || [])
+    .map((event) => {
+      const date = event?.dates?.start?.localDate;
+      const title = cleanText(event?.name);
+      const ticketUrl = validHttpsUrl(event?.url);
+      if (!event?.id || !date || !title || !ticketUrl) return null;
+      if (date !== requestedDate) return null;
+
+      const statusCode = cleanText(event?.dates?.status?.code).toLowerCase();
+      if (statusCode === "cancelled") return null;
+
+      const venue = event?._embedded?.venues?.[0] || {};
+      const classification = event?.classifications?.[0] || {};
+      const segment = cleanText(classification?.segment?.name) || "Other";
+      const genre = cleanText(classification?.genre?.name);
+      const price = normalizePrice(event?.priceRanges);
+
+      return {
+        id: String(event.id),
+        title,
+        date,
+        time: /^\d{2}:\d{2}:\d{2}$/.test(event?.dates?.start?.localTime || "")
+          ? event.dates.start.localTime.slice(0, 5)
+          : null,
+        dateTime: event?.dates?.start?.dateTime || null,
+        venue: cleanText(venue.name) || "Venue to be confirmed",
+        area: cleanText(venue?.city?.name),
+        category: segment,
+        subcategory: genre && genre !== "Undefined" ? genre : null,
+        status: statusCode || "scheduled",
+        price,
+        ticketUrl
+      };
+    })
+    .filter(Boolean)
+    .sort((a, b) => eventSortKey(a).localeCompare(eventSortKey(b)) || a.title.localeCompare(b.title))
+    .slice(0, 12);
+
+  return {
+    provider: "Ticketmaster Discovery API",
+    sourceUrl: "https://www.ticketmaster.co.uk/discover/london",
+    checkedAt,
+    requestedDate,
+    requestedCategory,
+    affiliateLinks: false,
+    count: events.length,
+    events
+  };
+}
+
+function normalizePrice(priceRanges) {
+  if (!Array.isArray(priceRanges) || !priceRanges.length) return null;
+  const range = priceRanges.find((item) => Number.isFinite(Number(item?.min))) || priceRanges[0];
+  const min = finiteNumberOrNull(range?.min);
+  const max = finiteNumberOrNull(range?.max);
+  if (min == null) return null;
+  return {
+    currency: cleanText(range?.currency) || "GBP",
+    min,
+    max: max == null ? min : max,
+    explicitlyFree: min === 0 && (max == null || max === 0)
+  };
+}
+
+function eventSortKey(event) {
+  return `${event.date}T${event.time || "23:59"}`;
+}
+
+function cleanText(value) {
+  return String(value || "").replace(/<[^>]*>/g, " ").replace(/\s+/g, " ").trim();
+}
+
+function validHttpsUrl(value) {
+  try {
+    const url = new URL(value);
+    return url.protocol === "https:" && /(^|\.)ticketmaster\.co\.uk$/i.test(url.hostname) ? url.toString() : null;
+  } catch {
+    return null;
+  }
+}
+
+function finiteNumberOrNull(value) {
+  if (value == null || value === "") return null;
+  const number = Number(value);
+  return Number.isFinite(number) ? number : null;
+}
+
+function isValidDateKey(value) {
+  const [year, month, day] = value.split("-").map(Number);
+  const date = new Date(Date.UTC(year, month - 1, day));
+  return date.getUTCFullYear() === year && date.getUTCMonth() === month - 1 && date.getUTCDate() === day;
+}
+
+function londonDateKey(value) {
+  const parts = new Intl.DateTimeFormat("en-CA", {
+    year: "numeric",
+    month: "2-digit",
+    day: "2-digit",
+    timeZone: "Europe/London"
+  }).formatToParts(value);
+  const values = Object.fromEntries(parts.map((part) => [part.type, part.value]));
+  return `${values.year}-${values.month}-${values.day}`;
+}
+
+export function londonDayUtcRange(dateKey) {
+  const [year, month, day] = dateKey.split("-").map(Number);
+  const start = londonMidnightUtc(year, month, day);
+  const next = new Date(Date.UTC(year, month - 1, day + 1));
+  const end = londonMidnightUtc(next.getUTCFullYear(), next.getUTCMonth() + 1, next.getUTCDate());
+  return { start: start.toISOString().replace(".000Z", "Z"), end: end.toISOString().replace(".000Z", "Z") };
+}
+
+function londonMidnightUtc(year, month, day) {
+  const middayUtc = new Date(Date.UTC(year, month - 1, day, 12));
+  const offsetName = new Intl.DateTimeFormat("en-GB", {
+    timeZone: "Europe/London",
+    timeZoneName: "longOffset"
+  }).formatToParts(middayUtc).find((part) => part.type === "timeZoneName")?.value || "GMT";
+  const match = offsetName.match(/GMT([+-])(\d{2}):(\d{2})/);
+  const offsetMinutes = match
+    ? (match[1] === "+" ? 1 : -1) * (Number(match[2]) * 60 + Number(match[3]))
+    : 0;
+  return new Date(Date.UTC(year, month - 1, day) - offsetMinutes * 60_000);
 }
 
 export function normalizeWeather(payload, fetchedAt = new Date().toISOString()) {

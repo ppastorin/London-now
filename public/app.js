@@ -19,6 +19,7 @@
   let preferences = readPreferences();
   let selectedWeatherDate = londonDateKey(new Date());
   let weatherForecast = null;
+  let eventsRequest = null;
 
   async function loadWeather() {
     const card = document.querySelector("#weatherCard");
@@ -184,6 +185,120 @@
     }
   }
 
+  async function loadEvents() {
+    const card = document.querySelector("#eventsCard");
+    const list = document.querySelector("#eventList");
+    const kicker = document.querySelector("#eventsKicker");
+    const freshness = document.querySelector("#eventsFreshness");
+    const category = document.querySelector("#eventCategory").value;
+
+    if (eventsRequest) eventsRequest.abort();
+    eventsRequest = new AbortController();
+    card.classList.add("is-loading");
+    card.setAttribute("aria-busy", "true");
+    list.setAttribute("aria-busy", "true");
+    list.replaceChildren(createLoadingRow("Finding events in London…"));
+    kicker.textContent = "What’s on · checking";
+
+    try {
+      const params = new URLSearchParams({ date: selectedWeatherDate, category });
+      const response = await fetch(`./api/events?${params}`, {
+        headers: { accept: "application/json" },
+        signal: eventsRequest.signal
+      });
+      const data = await response.json();
+      if (!response.ok) throw new Error(data.error || `HTTP ${response.status}`);
+
+      list.replaceChildren();
+      if (data.events.length) {
+        data.events.slice(0, 6).forEach((event) => list.appendChild(createEventRow(event)));
+        kicker.textContent = `What’s on · ${data.events.length} found`;
+      } else {
+        list.appendChild(createEventMessage("No matching events found", "Try another category or check Ticketmaster directly."));
+        kicker.textContent = "What’s on · no matches";
+      }
+      freshness.textContent = `Ticketmaster checked ${formatTime(data.checkedAt)}`;
+      list.setAttribute("aria-busy", "false");
+      card.classList.remove("is-loading");
+      card.setAttribute("aria-busy", "false");
+    } catch (error) {
+      if (error?.name === "AbortError") return;
+      list.replaceChildren(createEventMessage(
+        "Events temporarily unavailable",
+        error instanceof Error ? error.message : "Check Ticketmaster for current listings."
+      ));
+      kicker.textContent = "What’s on · unavailable";
+      freshness.textContent = "Live fetch failed · use official source";
+      list.setAttribute("aria-busy", "false");
+      card.classList.remove("is-loading");
+      card.setAttribute("aria-busy", "false");
+    }
+  }
+
+  function createEventRow(event) {
+    const item = document.createElement("li");
+    const time = document.createElement("time");
+    time.dateTime = event.dateTime || `${event.date}T${event.time || "00:00"}`;
+    time.textContent = event.time || "All day";
+
+    const content = document.createElement("span");
+    content.className = "event-copy";
+    const title = document.createElement("strong");
+    const link = document.createElement("a");
+    link.href = event.ticketUrl;
+    link.target = "_blank";
+    link.rel = "noopener noreferrer";
+    link.textContent = event.title;
+    title.appendChild(link);
+
+    const details = document.createElement("small");
+    const location = [event.venue, event.area].filter(Boolean).join(" · ");
+    const category = event.subcategory || event.category;
+    details.textContent = [location, category, formatEventPrice(event.price)].filter(Boolean).join(" · ");
+    content.append(title, details);
+
+    const action = document.createElement("a");
+    action.className = "event-action";
+    action.href = event.ticketUrl;
+    action.target = "_blank";
+    action.rel = "noopener noreferrer";
+    action.textContent = "Tickets ↗";
+    action.setAttribute("aria-label", `Tickets for ${event.title}`);
+    item.append(time, content, action);
+    return item;
+  }
+
+  function createEventMessage(titleText, detailText) {
+    const item = document.createElement("li");
+    item.className = "event-message";
+    const content = document.createElement("span");
+    const title = document.createElement("strong");
+    const detail = document.createElement("small");
+    title.textContent = titleText;
+    detail.textContent = detailText;
+    content.append(title, detail);
+    item.appendChild(content);
+    return item;
+  }
+
+  function createLoadingRow(text) {
+    const item = document.createElement("li");
+    item.className = "loading-row";
+    const bar = document.createElement("span");
+    const label = document.createElement("span");
+    bar.className = "loading-bar";
+    label.textContent = text;
+    item.append(bar, label);
+    return item;
+  }
+
+  function formatEventPrice(price) {
+    if (!price) return "Price unavailable";
+    if (price.explicitlyFree) return "Free";
+    const currency = price.currency === "GBP" ? "£" : `${price.currency} `;
+    return `From ${currency}${Number(price.min).toLocaleString("en-GB", { maximumFractionDigits: 2 })}`;
+  }
+
   function createAirportRow(airport) {
     const row = document.createElement("li");
     row.className = `airport-row airport-row--${airport.status}`;
@@ -277,6 +392,7 @@
         selectedDateBadge.textContent = button.dataset.badge;
         selectedWeatherDate = button.dataset.date;
         renderWeather();
+        loadEvents();
       });
       dateSwitcher.appendChild(button);
     });
@@ -355,13 +471,16 @@
   });
 
   document.querySelector("#fullScreenLink").href = window.location.href;
+  document.querySelector("#eventCategory").addEventListener("change", loadEvents);
   renderDates();
   applyPreferences();
   applyView();
   loadTfl();
   loadWeather();
   loadAirportAccess();
+  loadEvents();
   window.setInterval(loadTfl, 90_000);
   window.setInterval(loadWeather, 5 * 60_000);
   window.setInterval(loadAirportAccess, 90_000);
+  window.setInterval(loadEvents, 30 * 60_000);
 })();

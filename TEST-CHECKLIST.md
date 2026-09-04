@@ -1,42 +1,62 @@
-# Build 2.4 validation — unified tools and white theme
+# Build 3 validation — Ticketmaster events
 
 ## Automated package checks
 
 - [ ] `npm install` completes.
-- [ ] `npm run check` passes all assertions and fixture tests.
+- [ ] `npm run check` passes every assertion and fixture test.
 - [ ] Wrangler remains pinned and the Worker name remains `london-now`.
-- [ ] No API key appears in GitHub, browser source, responses or logs.
+- [ ] No TfL, Met Office or Ticketmaster credential appears in GitHub, browser source, API responses or logs.
 
-## London Advanced tools
+## Cloudflare configuration
 
-- [ ] There is one London Advanced tools card, not a second map-based promotion.
-- [ ] The card contains exactly four links.
-- [ ] Escape the crowds opens `/home/escape-the-crowds`.
-- [ ] Travel fare calculator opens `/home/travel-fare-calculator`.
-- [ ] Smart navigation opens `/home/smart-navigation`.
-- [ ] London by mood opens `/home/london-by-mood`.
-- [ ] Every link opens in a new tab.
+- [ ] `TICKETMASTER_API_KEY` exists as an encrypted secret.
+- [ ] Its value is the Ticketmaster Consumer Key, not the Consumer Secret.
+- [ ] `METOFFICE_API_KEY`, `WEATHER_CACHE` and the hourly weather trigger remain present.
+- [ ] Existing Worker, repository and production URL are unchanged.
 
-## Theme and responsive checks
+## API checks
 
-- [ ] The dashboard background remains white when the device or browser is in dark mode.
-- [ ] The background visually matches the surrounding London Advanced Google Sites page.
-- [ ] The three lower cards align cleanly on desktop.
-- [ ] All cards become a single column at 640 px and below.
-- [ ] No horizontal overflow appears at 320, 390, 768 or 1280 px.
-- [ ] Long tool labels wrap without widening the card.
+- [ ] `/api/health` returns HTTP 200 and version `0.4.0`.
+- [ ] Health reports events as `ready`.
+- [ ] `/api/events` returns HTTP 200 and `provider: "Ticketmaster Discovery API"`.
+- [ ] `/api/events` contains `affiliateLinks: false`.
+- [ ] The response contains no Consumer Key or Consumer Secret.
+- [ ] Valid date/category parameters return the same values in `requestedDate` and `requestedCategory`.
+- [ ] An invalid date returns HTTP 400.
+- [ ] An invalid category returns HTTP 400.
+- [ ] Repeating the same valid request normally changes `x-cache` from `MISS` to `HIT`.
 
-## Live-data and embed regression
+## Event-content checks
 
-- [ ] `/api/health` returns HTTP 200 and version `0.3.4`.
+- [ ] Every displayed event matches the selected London calendar date.
+- [ ] Category choices are All, Music, Theatre & Arts, Sport and Family.
+- [ ] At least two returned event links open on `ticketmaster.co.uk`.
+- [ ] Cancelled events are not displayed.
+- [ ] Events without price data show `Price unavailable`, never `Free`.
+- [ ] Any event labelled `Free` has an explicit zero-price range in the API response.
+- [ ] No more than six events appear in the dashboard card.
+- [ ] Empty results show a useful empty state rather than an endless spinner.
+- [ ] Upstream failure resolves to an error state with a working Ticketmaster source link.
+
+## Existing-function regression
+
 - [ ] `/api/tfl`, `/api/weather` and `/api/airport-access` return HTTP 200.
-- [ ] All five official airport departure actions still work.
+- [ ] All five airport departure links work.
+- [ ] All four London Advanced tool links remain in one block.
+- [ ] Weather follows the selected date.
+- [ ] Airport and accessibility preferences persist after refresh.
+
+## Responsive and Google Sites checks
+
+- [ ] Test 320, 390, 768 and 1280 px widths.
+- [ ] Long event titles wrap without widening the page.
+- [ ] Category selection does not create horizontal scrolling.
+- [ ] Event rows remain readable at 200% text zoom.
 - [ ] The existing Google Sites embed loads without changing its HTML code.
 - [ ] Google Sites retains one usable vertical scrolling path and no horizontal scrollbar.
 
 ## Production gate
 
-- [ ] Cloudflare build completed successfully from `main`.
-- [ ] Production API, homepage, tool-link and embed checks passed.
-- [ ] Existing weather secret, KV binding and hourly trigger remain present.
-- [ ] Approved commit is tagged `v0.3.4-unified-tools-approved`.
+- [ ] GitHub `main` triggered a successful Cloudflare deployment.
+- [ ] Production API, homepage and embed checks passed.
+- [ ] Approved commit is tagged `v0.4.0-ticketmaster-events-approved`.
