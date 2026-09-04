@@ -4,7 +4,7 @@ import { normalizeAirportAccess } from "../worker/index.js";
 
 const checkedAt = "2026-09-04T14:00:00.000Z";
 
-test("builds live Heathrow and London City access from TfL lines", () => {
+test("combines TfL and National Rail airport access", () => {
   const result = normalizeAirportAccess({
     checkedAt,
     lines: [
@@ -12,26 +12,30 @@ test("builds live Heathrow and London City access from TfL lines", () => {
       { name: "Piccadilly", status: "Minor Delays", disrupted: true },
       { name: "DLR", status: "Good Service", disrupted: false }
     ]
-  });
+  }, [
+    { airport: "LHR", name: "Heathrow Express", from: "PAD", to: "HXX", board: { status: "good", summary: "4 departures · no reported delay" } },
+    { airport: "LGW", name: "Gatwick Express / Southern", from: "VIC", to: "GTW", board: { status: "disruption", summary: "1 delayed" } }
+  ]);
 
   const heathrow = result.airports.find((airport) => airport.code === "LHR");
   const city = result.airports.find((airport) => airport.code === "LCY");
   assert.equal(result.checkedAt, checkedAt);
   assert.equal(heathrow.status, "disruption");
-  assert.equal(heathrow.coverage, "partial");
+  assert.equal(heathrow.coverage, "live");
   assert.match(heathrow.label, /Piccadilly disruption/);
+  assert.equal(result.airports.find((airport) => airport.code === "LGW").status, "disruption");
   assert.equal(city.status, "good");
   assert.equal(city.coverage, "live");
 });
 
-test("marks rail-dependent airports pending without inventing a status", () => {
+test("marks missing rail-dependent airport data unavailable without inventing a status", () => {
   const result = normalizeAirportAccess({ checkedAt, lines: [] });
 
   for (const code of ["LGW", "LTN", "STN"]) {
     const airport = result.airports.find((item) => item.code === code);
     assert.equal(airport.status, "pending");
-    assert.equal(airport.coverage, "pending");
-    assert.equal(airport.label, "Rail feed pending");
+    assert.equal(airport.coverage, "live");
+    assert.equal(airport.label, "Live status unavailable");
   }
 });
 

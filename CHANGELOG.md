@@ -1,5 +1,15 @@
 # Changelog
 
+## 0.5.0 — 4 September 2026
+
+- Added `/api/rail?station=CRS` using Rail Delivery Group's Live Departure Board product on Rail Data Marketplace.
+- Added a strict allowlist for seven selectable London terminals.
+- Added 75-second per-board caching, upstream timeouts and secret-safe error responses.
+- Replaced the selected-station placeholder with the next three live departures.
+- Added filtered rail-board checks for Heathrow, Gatwick, Luton and Stansted access routes.
+- Kept airport flight status separate and linked only to official airport departure boards.
+- Added National Rail normalization, delay, cancellation, empty-board and malformed-response tests.
+
 ## 0.4.0 — 4 September 2026
 
 - Added `/api/events` using the Ticketmaster Discovery API.

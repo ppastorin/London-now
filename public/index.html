@@ -28,8 +28,8 @@
   </header>
 
   <div class="demo-banner" role="status">
-    <strong>Live build 3</strong>
-    <span>TfL, Met Office weather, Ticketmaster events and selected airport access routes are live.</span>
+    <strong>Live build 4</strong>
+    <span>TfL, Met Office weather, National Rail departures, airport access and Ticketmaster events are live.</span>
   </div>
 
   <main id="dashboard" class="page-shell">
@@ -95,8 +95,8 @@
         <ul class="status-list status-list--secondary">
           <li id="stationRow">
             <span class="mode-dot mode-dot--rail" aria-hidden="true"></span>
-            <span><strong id="stationName">London Waterloo</strong><small>National Rail departures are not connected yet</small></span>
-            <a class="status-text" href="https://www.nationalrail.co.uk/live-trains/departures/" target="_blank" rel="noreferrer">Check ↗</a>
+            <span><strong id="stationName">London Waterloo</strong><small id="stationDepartures">Checking the next departures…</small></span>
+            <a class="status-text" id="stationLink" href="https://www.nationalrail.co.uk/live-trains/departures/wat/" target="_blank" rel="noreferrer"><span id="stationStatus">Checking</span> ↗</a>
           </li>
           <li id="stepFreeRow">
             <span class="mode-dot mode-dot--access" aria-hidden="true"></span>
@@ -105,7 +105,7 @@
           </li>
         </ul>
         <footer class="source-row">
-          <span id="tflFreshness">Waiting for TfL</span>
+          <span><span id="tflFreshness">Waiting for TfL</span> · <span id="railFreshness">Waiting for National Rail</span></span>
           <span class="source-links">
             <a href="https://tfl.gov.uk/tube-dlr-overground/status/" target="_blank" rel="noreferrer">TfL ↗</a>
             <a href="https://www.nationalrail.co.uk/status-and-disruptions/" target="_blank" rel="noreferrer">National Rail ↗</a>
@@ -116,7 +116,7 @@
       <article class="card card--airports" data-card data-views="now flights">
         <header class="card-header">
           <div>
-            <p class="card-kicker">Getting to airports · live/partial</p>
+            <p class="card-kicker">Getting to airports · live access</p>
             <h2>Airport access</h2>
           </div>
           <button class="inline-control" type="button" data-open-settings>Change</button>
@@ -132,8 +132,11 @@
           <a data-airport-link="LCY" href="https://www.londoncityairport.com/flight-info/departures-arrivals" target="_blank" rel="noreferrer" title="Official combined departures and arrivals board">LCY departures ↗</a>
         </div>
         <footer class="source-row">
-          <span id="airportFreshness">Waiting for TfL</span>
-          <a href="https://tfl.gov.uk/plan-a-journey/" target="_blank" rel="noreferrer">Journey Planner ↗</a>
+          <span id="airportFreshness">Waiting for TfL and National Rail</span>
+          <span class="source-links">
+            <a href="https://tfl.gov.uk/plan-a-journey/" target="_blank" rel="noreferrer">TfL ↗</a>
+            <a href="https://www.nationalrail.co.uk/status-and-disruptions/" target="_blank" rel="noreferrer">Rail ↗</a>
+          </span>
         </footer>
       </article>
 
@@ -183,14 +186,14 @@
     <section class="phase-note" aria-labelledby="phaseNoteTitle">
       <div>
         <p class="card-kicker">Build status</p>
-        <h2 id="phaseNoteTitle">Build 3: live London events.</h2>
+        <h2 id="phaseNoteTitle">Build 4: live National Rail departures.</h2>
       </div>
-      <p>Ticketmaster now supplies live, licensed event listings by date and category. Heathrow and London City access use live TfL status; Gatwick, Luton and Stansted remain pending until National Rail approves API access.</p>
+      <p>The selected London terminal now shows live departures. Rail services from central London to Heathrow, Gatwick, Luton and Stansted are checked alongside TfL; the airport buttons remain the authoritative source for flight departures.</p>
     </section>
   </main>
 
   <footer class="site-footer">
-    <span>London Now · Live build 3</span>
+    <span>London Now · Live build 4</span>
     <span>Always confirm journeys with the official operator before travelling.</span>
   </footer>
 

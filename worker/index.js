@@ -1,8 +1,10 @@
 const TFL_STATUS_URL = "https://api.tfl.gov.uk/Line/Mode/tube,dlr,overground,elizabeth-line/Status";
 const MET_OFFICE_DAILY_URL = "https://data.hub.api.metoffice.gov.uk/sitespecific/v0/point/daily";
 const TICKETMASTER_EVENTS_URL = "https://app.ticketmaster.com/discovery/v2/events.json";
+const NATIONAL_RAIL_DEPARTURES_URL = "https://api1.raildata.org.uk/1010-live-departure-board-dep1_2/LDBWS/api/20220120/GetDepartureBoard";
 const WEATHER_CACHE_KEY = "metoffice:global-spot:london:daily:v1";
 const TFL_CACHE_SECONDS = 75;
+const RAIL_CACHE_SECONDS = 75;
 const WEATHER_STALE_AFTER_MS = 2 * 60 * 60 * 1000;
 const EVENTS_CACHE_SECONDS = 6 * 60 * 60;
 
@@ -13,6 +15,23 @@ const EVENT_CATEGORIES = {
   sports: "Sports",
   family: "Family"
 };
+
+const LONDON_STATIONS = {
+  WAT: "London Waterloo",
+  VIC: "London Victoria",
+  PAD: "London Paddington",
+  LST: "London Liverpool Street",
+  LBG: "London Bridge",
+  KGX: "London King’s Cross",
+  EUS: "London Euston"
+};
+
+const AIRPORT_RAIL_ROUTES = [
+  { airport: "LHR", name: "Heathrow Express", from: "PAD", to: "HXX" },
+  { airport: "LGW", name: "Gatwick Express / Southern", from: "VIC", to: "GTW" },
+  { airport: "LTN", name: "Thameslink / East Midlands Railway", from: "STP", to: "LTN" },
+  { airport: "STN", name: "Stansted Express / Greater Anglia", from: "LST", to: "SSD" }
+];
 
 const BASE_JSON_HEADERS = {
   "content-type": "application/json; charset=utf-8",
@@ -30,14 +49,16 @@ export default {
           ? "missing-kv"
           : "ready";
       const eventsState = env.TICKETMASTER_API_KEY ? "ready" : "missing-secret";
-      const configured = weatherState === "ready" && eventsState === "ready";
+      const railState = env.NATIONAL_RAIL_API_KEY ? "ready" : "missing-secret";
+      const configured = weatherState === "ready" && eventsState === "ready" && railState === "ready";
       return json({
         status: configured ? "ok" : "configuration-required",
-        version: "0.4.0",
+        version: "0.5.0",
         integrations: {
           tfl: "live",
           weather: weatherState,
-          airportAccess: "partial-live",
+          rail: railState,
+          airportAccess: railState === "ready" ? "live-access" : "partial-live",
           events: eventsState
         },
         checkedAt: new Date().toISOString()
@@ -45,6 +66,7 @@ export default {
     }
 
     if (url.pathname === "/api/tfl") return handleTfl(request, env, context);
+    if (url.pathname === "/api/rail") return handleRail(request, env, context);
     if (url.pathname === "/api/airport-access") return handleAirportAccess(request, env, context);
     if (url.pathname === "/api/weather") return handleWeather(env);
     if (url.pathname === "/api/events") return handleEvents(request, env, context);
@@ -157,21 +179,127 @@ async function getTflResponse(request, env, context) {
   }
 }
 
+async function handleRail(request, env, context) {
+  if (!env.NATIONAL_RAIL_API_KEY) {
+    return json({
+      error: "National Rail API key is not configured",
+      action: "Add the NATIONAL_RAIL_API_KEY secret in Cloudflare",
+      sourceUrl: "https://raildata.org.uk/dataProduct/P-d81d6eaf-8060-4467-a339-1c833e50cbbe/overview"
+    }, 503, { "cache-control": "no-store" });
+  }
+
+  const requestUrl = new URL(request.url);
+  const station = String(requestUrl.searchParams.get("station") || "WAT").toUpperCase();
+  if (!(station in LONDON_STATIONS)) {
+    return json({
+      error: "Unsupported station",
+      supportedStations: Object.entries(LONDON_STATIONS).map(([code, name]) => ({ code, name }))
+    }, 400, { "cache-control": "no-store" });
+  }
+
+  try {
+    return await getRailBoardResponse(request, env, context, { station, numRows: 6, timeWindow: 120 });
+  } catch (error) {
+    return upstreamError(
+      "National Rail departures are temporarily unavailable",
+      error,
+      "National Rail Live Departure Board",
+      `https://www.nationalrail.co.uk/live-trains/departures/${station.toLowerCase()}/`
+    );
+  }
+}
+
+async function getRailBoardResponse(request, env, context, options) {
+  if (!env.NATIONAL_RAIL_API_KEY) throw new Error("National Rail API key is not configured");
+
+  const station = String(options.station || "").toUpperCase();
+  const filterCrs = options.filterCrs ? String(options.filterCrs).toUpperCase() : null;
+  const numRows = Math.min(12, Math.max(1, Number(options.numRows) || 6));
+  const timeWindow = Math.min(300, Math.max(1, Number(options.timeWindow) || 120));
+  const cache = caches.default;
+  const cacheUrl = new URL("/__cache/rail", request.url);
+  cacheUrl.search = new URLSearchParams({
+    station,
+    ...(filterCrs ? { filterCrs } : {}),
+    numRows: String(numRows),
+    timeWindow: String(timeWindow)
+  }).toString();
+  const cacheKey = new Request(cacheUrl.toString(), { method: "GET" });
+  const cached = await cache.match(cacheKey);
+  if (cached) return withCacheStatus(cached, "HIT");
+
+  const upstreamUrl = new URL(`${NATIONAL_RAIL_DEPARTURES_URL}/${station}`);
+  upstreamUrl.searchParams.set("numRows", String(numRows));
+  upstreamUrl.searchParams.set("timeOffset", "0");
+  upstreamUrl.searchParams.set("timeWindow", String(timeWindow));
+  if (filterCrs) {
+    upstreamUrl.searchParams.set("filterCrs", filterCrs);
+    upstreamUrl.searchParams.set("filterType", "to");
+  }
+
+  const upstream = await fetch(upstreamUrl, {
+    headers: {
+      accept: "application/json",
+      "x-apikey": env.NATIONAL_RAIL_API_KEY,
+      "user-agent": "LondonNow/0.5 (+https://www.londonadvanced.com/)"
+    },
+    signal: AbortSignal.timeout(10000)
+  });
+  if (!upstream.ok) throw new Error(`Rail Data Marketplace returned HTTP ${upstream.status}`);
+
+  const board = normalizeRailBoard(await upstream.json(), { station, filterCrs });
+  const response = json(board, 200, {
+    "cache-control": `public, max-age=30, s-maxage=${RAIL_CACHE_SECONDS}`,
+    "x-cache": "MISS"
+  });
+  context.waitUntil(cache.put(cacheKey, response.clone()));
+  return response;
+}
+
 async function handleAirportAccess(request, env, context) {
-  const tflResponse = await getTflResponse(request, env, context);
-  if (!tflResponse.ok) {
+  const tasks = [getTflResponse(request, env, context)];
+  if (env.NATIONAL_RAIL_API_KEY) {
+    AIRPORT_RAIL_ROUTES.forEach((route) => {
+      tasks.push(getRailBoardResponse(request, env, context, {
+        station: route.from,
+        filterCrs: route.to,
+        numRows: 6,
+        timeWindow: 120
+      }));
+    });
+  }
+
+  const results = await Promise.allSettled(tasks);
+  let tfl = null;
+  if (results[0]?.status === "fulfilled" && results[0].value.ok) {
+    tfl = await results[0].value.clone().json();
+  }
+
+  const railRoutes = [];
+  if (env.NATIONAL_RAIL_API_KEY) {
+    for (let index = 0; index < AIRPORT_RAIL_ROUTES.length; index += 1) {
+      const definition = AIRPORT_RAIL_ROUTES[index];
+      const result = results[index + 1];
+      if (result?.status === "fulfilled" && result.value.ok) {
+        const board = await result.value.clone().json();
+        railRoutes.push({ ...definition, board });
+      } else {
+        railRoutes.push({ ...definition, error: "Live rail status unavailable" });
+      }
+    }
+  }
+
+  if (!tfl && !railRoutes.some((route) => route.board)) {
     return json({
       error: "Live airport access is temporarily unavailable",
-      provider: "Transport for London",
-      sourceUrl: "https://tfl.gov.uk/plan-a-journey/",
+      provider: "TfL and National Rail",
+      sourceUrl: "https://www.nationalrail.co.uk/status-and-disruptions/",
       checkedAt: new Date().toISOString()
     }, 502, { "cache-control": "no-store" });
   }
 
-  const tfl = await tflResponse.clone().json();
-  return json(normalizeAirportAccess(tfl), 200, {
-    "cache-control": `public, max-age=30, s-maxage=${TFL_CACHE_SECONDS}`,
-    "x-cache": tflResponse.headers.get("x-cache") || "MISS"
+  return json(normalizeAirportAccess(tfl, railRoutes), 200, {
+    "cache-control": `public, max-age=30, s-maxage=${RAIL_CACHE_SECONDS}`
   });
 }
 
@@ -261,51 +389,116 @@ export function normalizeTfl(payload, checkedAt = new Date().toISOString()) {
   };
 }
 
-export function normalizeAirportAccess(tfl, checkedAt = tfl?.checkedAt || new Date().toISOString()) {
-  if (!Array.isArray(tfl?.lines)) throw new TypeError("Unexpected TfL airport-access input");
+export function normalizeRailBoard(payload, options = {}, checkedAt = new Date().toISOString()) {
+  if (!payload || typeof payload !== "object") throw new TypeError("Unexpected National Rail response");
+  const rawServices = payload.trainServices;
+  if (rawServices != null && !Array.isArray(rawServices)) {
+    throw new TypeError("Unexpected National Rail services response");
+  }
 
-  const findLine = (name) => tfl.lines.find((line) => line.name.toLowerCase() === name.toLowerCase());
+  const services = (rawServices || []).map((service, index) => {
+    const scheduled = cleanText(service?.std);
+    const expected = cleanText(service?.etd);
+    const cancelled = Boolean(service?.isCancelled) || /cancelled/i.test(expected);
+    const delayed = !cancelled && isRailServiceDelayed(scheduled, expected);
+    const destinations = Array.isArray(service?.destination) ? service.destination : [];
+    const destination = destinations.map((item) => cleanText(item?.locationName)).filter(Boolean).join(" & ") || "Destination unavailable";
+    return {
+      id: cleanText(service?.serviceID) || `${options.station || payload.crs || "rail"}-${index}`,
+      scheduled: scheduled || null,
+      expected: expected || null,
+      platform: cleanText(service?.platform) || null,
+      operator: cleanText(service?.operator) || null,
+      destination,
+      cancelled,
+      delayed,
+      status: cancelled ? "Cancelled" : delayed ? expected : expected || "Expected time unavailable",
+      reason: cleanText(service?.cancelReason) || cleanText(service?.delayReason) || null
+    };
+  });
+
+  const cancelledCount = services.filter((service) => service.cancelled).length;
+  const delayedCount = services.filter((service) => service.delayed).length;
+  const disruptionCount = cancelledCount + delayedCount;
+  const messages = (Array.isArray(payload.nrccMessages) ? payload.nrccMessages : [])
+    .map((message) => cleanText(message?.value || message))
+    .filter(Boolean)
+    .slice(0, 3);
+
+  return {
+    provider: "National Rail Live Departure Board",
+    sourceUrl: `https://www.nationalrail.co.uk/live-trains/departures/${String(options.station || payload.crs || "").toLowerCase()}/`,
+    checkedAt,
+    generatedAt: payload.generatedAt || null,
+    station: {
+      code: cleanText(payload.crs) || options.station || null,
+      name: cleanText(payload.locationName) || LONDON_STATIONS[options.station] || options.station || "National Rail station"
+    },
+    filterCrs: options.filterCrs || null,
+    status: disruptionCount ? "disruption" : services.length ? "good" : "no-services",
+    summary: disruptionCount
+      ? [cancelledCount ? `${cancelledCount} cancelled` : "", delayedCount ? `${delayedCount} delayed` : ""].filter(Boolean).join(" · ")
+      : services.length
+        ? `${services.length} departure${services.length === 1 ? "" : "s"} · no reported delay`
+        : "No departures returned in the next 2 hours",
+    cancelledCount,
+    delayedCount,
+    messages,
+    services
+  };
+}
+
+export function normalizeAirportAccess(tfl, railRoutes = [], checkedAt = tfl?.checkedAt || new Date().toISOString()) {
+  const tflLines = Array.isArray(tfl?.lines) ? tfl.lines : [];
+  const findLine = (name) => tflLines.find((line) => line.name.toLowerCase() === name.toLowerCase());
   const liveRoute = (name) => {
     const line = findLine(name);
     return line
       ? { name, provider: "TfL", live: true, disrupted: Boolean(line.disrupted), status: line.status }
       : { name, provider: "TfL", live: false, disrupted: null, status: "Status unavailable" };
   };
-  const pendingRail = (name) => ({
-    name,
-    provider: "National Rail",
-    live: false,
-    disrupted: null,
-    status: "Awaiting Rail Data Marketplace access"
-  });
+  const railRoute = (airport, fallbackName) => {
+    const route = railRoutes.find((item) => item.airport === airport);
+    if (!route) return { name: fallbackName, provider: "National Rail", live: false, disrupted: null, status: "Rail feed not configured" };
+    if (!route.board) return { name: route.name, provider: "National Rail", live: false, disrupted: null, status: route.error || "Status unavailable" };
+    return {
+      name: route.name,
+      provider: "National Rail",
+      live: true,
+      disrupted: route.board.status === "disruption",
+      status: route.board.summary,
+      from: route.from,
+      to: route.to
+    };
+  };
   const summarise = (code, name, routes, coverage) => {
     const live = routes.filter((route) => route.live);
     const disrupted = live.filter((route) => route.disrupted);
     const status = disrupted.length ? "disruption" : live.length ? "good" : "pending";
     const label = disrupted.length
       ? `${disrupted.map((route) => route.name).join(" and ")} disruption`
-      : coverage === "live"
+      : live.length && coverage === "live"
         ? "Live route clear"
         : live.length
           ? "TfL routes clear"
-          : "Rail feed pending";
+          : "Live status unavailable";
 
     return { code, name, status, coverage, label, routes };
   };
 
   const airports = [
-    summarise("LHR", "Heathrow", [liveRoute("Elizabeth line"), liveRoute("Piccadilly"), pendingRail("Heathrow Express")], "partial"),
-    summarise("LGW", "Gatwick", [pendingRail("Gatwick Express"), pendingRail("Southern"), pendingRail("Thameslink")], "pending"),
-    summarise("LTN", "Luton", [pendingRail("Thameslink"), pendingRail("East Midlands Railway")], "pending"),
-    summarise("STN", "Stansted", [pendingRail("Stansted Express / Greater Anglia")], "pending"),
+    summarise("LHR", "Heathrow", [liveRoute("Elizabeth line"), liveRoute("Piccadilly"), railRoute("LHR", "Heathrow Express")], "live"),
+    summarise("LGW", "Gatwick", [railRoute("LGW", "Gatwick Express / Southern")], "live"),
+    summarise("LTN", "Luton", [railRoute("LTN", "Thameslink / East Midlands Railway")], "live"),
+    summarise("STN", "Stansted", [railRoute("STN", "Stansted Express / Greater Anglia")], "live"),
     summarise("LCY", "London City", [liveRoute("DLR")], "live")
   ];
 
   return {
-    provider: "Transport for London",
-    sourceUrl: "https://tfl.gov.uk/plan-a-journey/",
+    provider: "Transport for London and National Rail",
+    sourceUrl: "https://www.nationalrail.co.uk/status-and-disruptions/",
     checkedAt,
-    scope: "Surface and public-transport access only; not flight operations",
+    scope: "Public-transport access only; not flight operations",
     airports
   };
 }
@@ -382,6 +575,16 @@ function normalizePrice(priceRanges) {
 
 function eventSortKey(event) {
   return `${event.date}T${event.time || "23:59"}`;
+}
+
+function isRailServiceDelayed(scheduled, expected) {
+  if (!expected || /^(on time|no report)$/i.test(expected)) return false;
+  if (/^(delayed|cancelled)$/i.test(expected)) return /delayed/i.test(expected);
+  if (!/^\d{2}:\d{2}$/.test(scheduled) || !/^\d{2}:\d{2}$/.test(expected)) return false;
+  const toMinutes = (value) => Number(value.slice(0, 2)) * 60 + Number(value.slice(3));
+  let difference = toMinutes(expected) - toMinutes(scheduled);
+  if (difference < -720) difference += 1440;
+  return difference >= 5;
 }
 
 function cleanText(value) {

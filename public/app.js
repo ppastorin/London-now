@@ -7,6 +7,15 @@
     station: "London Waterloo",
     stepFree: true
   };
+  const STATION_CODES = {
+    "London Waterloo": "WAT",
+    "London Victoria": "VIC",
+    "London Paddington": "PAD",
+    "London Liverpool Street": "LST",
+    "London Bridge": "LBG",
+    "London King’s Cross": "KGX",
+    "London Euston": "EUS"
+  };
 
   const settingsDialog = document.querySelector("#settingsDialog");
   const settingsForm = document.querySelector("#settingsForm");
@@ -182,6 +191,43 @@
       list.append(row);
       list.setAttribute("aria-busy", "false");
       freshness.textContent = "Live check failed · use Journey Planner";
+    }
+  }
+
+  async function loadRail() {
+    const stationName = document.querySelector("#stationName");
+    const departures = document.querySelector("#stationDepartures");
+    const status = document.querySelector("#stationStatus");
+    const link = document.querySelector("#stationLink");
+    const freshness = document.querySelector("#railFreshness");
+    const requestedName = preferences.station;
+    const station = STATION_CODES[requestedName] || "WAT";
+
+    stationName.textContent = requestedName;
+    departures.textContent = "Checking the next departures…";
+    status.textContent = "Checking";
+    status.className = "status-text";
+    link.href = `https://www.nationalrail.co.uk/live-trains/departures/${station.toLowerCase()}/`;
+
+    try {
+      const response = await fetch(`./api/rail?station=${encodeURIComponent(station)}`, { headers: { accept: "application/json" } });
+      const data = await response.json();
+      if (!response.ok) throw new Error(data.error || `HTTP ${response.status}`);
+      if (preferences.station !== requestedName) return;
+
+      const services = data.services.slice(0, 3);
+      departures.textContent = services.length
+        ? services.map((service) => `${service.scheduled || "—"} ${service.destination} · ${service.status}`).join(" · ")
+        : data.summary;
+      status.textContent = data.status === "disruption" ? data.summary : data.status === "no-services" ? "No services" : "Live";
+      status.className = `status-text ${data.status === "disruption" ? "status-text--warn" : data.status === "good" ? "status-text--good" : ""}`;
+      freshness.textContent = `Rail checked ${formatTime(data.checkedAt)}`;
+    } catch (error) {
+      if (preferences.station !== requestedName) return;
+      departures.textContent = error instanceof Error ? error.message : "Live rail data could not be loaded.";
+      status.textContent = "Check ↗";
+      status.className = "status-text status-text--warn";
+      freshness.textContent = "Rail fetch failed · use official source";
     }
   }
 
@@ -448,6 +494,7 @@
     };
     localStorage.setItem(STORAGE_KEY, JSON.stringify(preferences));
     applyPreferences();
+    loadRail();
     settingsDialog.close();
   });
 
@@ -456,6 +503,7 @@
     localStorage.removeItem(STORAGE_KEY);
     syncForm();
     applyPreferences();
+    loadRail();
   });
 
   viewTabs.forEach((tab) => {
@@ -477,10 +525,12 @@
   applyView();
   loadTfl();
   loadWeather();
+  loadRail();
   loadAirportAccess();
   loadEvents();
   window.setInterval(loadTfl, 90_000);
   window.setInterval(loadWeather, 5 * 60_000);
   window.setInterval(loadAirportAccess, 90_000);
+  window.setInterval(loadRail, 90_000);
   window.setInterval(loadEvents, 30 * 60_000);
 })();

@@ -1,62 +1,58 @@
-# Build 3 validation — Ticketmaster events
+# Build 4 validation — National Rail
 
-## Automated package checks
+## RDM subscription
+
+- [ ] The subscribed product is **Live Departure Board**, product ID `P-d81d6eaf-8060-4467-a339-1c833e50cbbe`.
+- [ ] Publisher is Rail Delivery Group; format is API; access is Open.
+- [ ] Subscription status is **Active**, not merely account approved or subscription Pending.
+- [ ] `GetDepartureBoard` with station `WAT` returns HTTP 200 in RDM **Try it**.
+- [ ] The Cloudflare secret is the Consumer Key, not the Consumer Secret.
+
+## Automated checks
 
 - [ ] `npm install` completes.
-- [ ] `npm run check` passes every assertion and fixture test.
-- [ ] Wrangler remains pinned and the Worker name remains `london-now`.
-- [ ] No TfL, Met Office or Ticketmaster credential appears in GitHub, browser source, API responses or logs.
+- [ ] `npm run check` passes all assertions and fixture tests.
+- [ ] Worker name remains `london-now` and Wrangler remains pinned.
+- [ ] No TfL, Met Office, Ticketmaster or RDM credential is committed.
 
-## Cloudflare configuration
+## Cloudflare
 
-- [ ] `TICKETMASTER_API_KEY` exists as an encrypted secret.
-- [ ] Its value is the Ticketmaster Consumer Key, not the Consumer Secret.
-- [ ] `METOFFICE_API_KEY`, `WEATHER_CACHE` and the hourly weather trigger remain present.
-- [ ] Existing Worker, repository and production URL are unchanged.
+- [ ] `NATIONAL_RAIL_API_KEY` exists as an encrypted secret.
+- [ ] Existing secrets, `WEATHER_CACHE` and hourly weather trigger remain present.
+- [ ] Existing repository, Worker and production URL are unchanged.
 
 ## API checks
 
-- [ ] `/api/health` returns HTTP 200 and version `0.4.0`.
-- [ ] Health reports events as `ready`.
-- [ ] `/api/events` returns HTTP 200 and `provider: "Ticketmaster Discovery API"`.
-- [ ] `/api/events` contains `affiliateLinks: false`.
-- [ ] The response contains no Consumer Key or Consumer Secret.
-- [ ] Valid date/category parameters return the same values in `requestedDate` and `requestedCategory`.
-- [ ] An invalid date returns HTTP 400.
-- [ ] An invalid category returns HTTP 400.
-- [ ] Repeating the same valid request normally changes `x-cache` from `MISS` to `HIT`.
+- [ ] `/api/health` returns HTTP 200 and version `0.5.0`.
+- [ ] Health reports rail `ready` and airport access `live-access`.
+- [ ] `/api/rail?station=WAT` returns HTTP 200 and a `services` array.
+- [ ] WAT, VIC, PAD, LST, LBG, KGX and EUS are accepted.
+- [ ] An unsupported CRS code returns HTTP 400.
+- [ ] The response contains no RDM credential.
+- [ ] A repeated station request normally changes `x-cache` from `MISS` to `HIT`.
+- [ ] `/api/airport-access` returns HTTP 200 even if one upstream rail route fails.
 
-## Event-content checks
+## Content behaviour
 
-- [ ] Every displayed event matches the selected London calendar date.
-- [ ] Category choices are All, Music, Theatre & Arts, Sport and Family.
-- [ ] At least two returned event links open on `ticketmaster.co.uk`.
-- [ ] Cancelled events are not displayed.
-- [ ] Events without price data show `Price unavailable`, never `Free`.
-- [ ] Any event labelled `Free` has an explicit zero-price range in the API response.
-- [ ] No more than six events appear in the dashboard card.
-- [ ] Empty results show a useful empty state rather than an endless spinner.
-- [ ] Upstream failure resolves to an error state with a working Ticketmaster source link.
+- [ ] Selected-station departures show scheduled time, destination and expected status.
+- [ ] Cancellations are labelled Cancelled.
+- [ ] Expected departures five or more minutes later than scheduled are treated as delayed.
+- [ ] Empty overnight boards say no departures were returned; they do not claim disruption.
+- [ ] Airport access is not described as flight status.
+- [ ] Official airport flight-departure links remain visible.
 
-## Existing-function regression
+## Regression and embed
 
-- [ ] `/api/tfl`, `/api/weather` and `/api/airport-access` return HTTP 200.
-- [ ] All five airport departure links work.
+- [ ] `/api/tfl`, `/api/weather` and `/api/events` still return HTTP 200.
+- [ ] Event date/category and weather date selection still work.
 - [ ] All four London Advanced tool links remain in one block.
-- [ ] Weather follows the selected date.
-- [ ] Airport and accessibility preferences persist after refresh.
-
-## Responsive and Google Sites checks
-
-- [ ] Test 320, 390, 768 and 1280 px widths.
-- [ ] Long event titles wrap without widening the page.
-- [ ] Category selection does not create horizontal scrolling.
-- [ ] Event rows remain readable at 200% text zoom.
-- [ ] The existing Google Sites embed loads without changing its HTML code.
-- [ ] Google Sites retains one usable vertical scrolling path and no horizontal scrollbar.
+- [ ] Airport and station preferences persist after refresh.
+- [ ] Google Sites uses the existing embed code and URL.
+- [ ] Test 320, 390, 768 and 1280-pixel widths.
+- [ ] There is no horizontal scrollbar and only one usable vertical scroll path.
 
 ## Production gate
 
 - [ ] GitHub `main` triggered a successful Cloudflare deployment.
-- [ ] Production API, homepage and embed checks passed.
-- [ ] Approved commit is tagged `v0.4.0-ticketmaster-events-approved`.
+- [ ] Production API, homepage and published Google Sites checks passed.
+- [ ] Approved commit is tagged `v0.5.0-national-rail-approved`.
