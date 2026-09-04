@@ -8,7 +8,6 @@ const required = [
   "public/styles.css",
   "public/app.js",
   "public/_headers",
-  "public/assets/london-map.webp",
   "worker/index.js",
   "tests/tfl.test.mjs",
   "tests/weather.test.mjs",
@@ -24,13 +23,21 @@ const headers = await readFile(resolve(root, "public/_headers"), "utf8");
 const wrangler = JSON.parse(await readFile(resolve(root, "wrangler.jsonc"), "utf8"));
 const packageJson = JSON.parse(await readFile(resolve(root, "package.json"), "utf8"));
 const worker = await readFile(resolve(root, "worker/index.js"), "utf8");
+const toolBlock = html.match(/<nav class="tool-links"[\s\S]*?<\/nav>/)?.[0] ?? "";
+const nativeToolUrls = [
+  "https://www.londonadvanced.com/home/escape-the-crowds",
+  "https://www.londonadvanced.com/home/travel-fare-calculator",
+  "https://www.londonadvanced.com/home/smart-navigation",
+  "https://www.londonadvanced.com/home/london-by-mood"
+];
 
 const assertions = [
-  [html.includes("Live build 2.3"), "current live-build scope notice is present"],
+  [html.includes("Live build 2.4"), "current live-build scope notice is present"],
   [!html.match(/18°|Sample alert|illustrative listing/i), "invented operational values are absent"],
   [html.includes('./styles.css'), "stylesheet reference is present"],
   [html.includes('./app.js'), "script reference is present"],
-  [css.includes('./assets/london-map.webp'), "map asset reference is present"],
+  [css.includes("--paper: #ffffff") && css.includes("background: var(--paper)") && html.includes('name="theme-color" content="#ffffff"'), "dashboard and browser theme backgrounds are white"],
+  [!css.includes("prefers-color-scheme: dark"), "device dark mode cannot override the white dashboard"],
   [headers.includes("frame-ancestors") && headers.includes("https://sites.google.com") && headers.includes("https://www.gstatic.com"), "complete Google Sites frame chain is permitted"],
   [!headers.includes("X-Frame-Options"), "obsolete X-Frame-Options is absent"],
   [wrangler.name === "london-now", "Wrangler name matches the Cloudflare Worker"],
@@ -42,16 +49,21 @@ const assertions = [
   [worker.includes("api.tfl.gov.uk") && worker.includes("/api/tfl"), "TfL adapter and endpoint are present"],
   [worker.includes("data.hub.api.metoffice.gov.uk") && worker.includes("/api/weather"), "Met Office adapter and endpoint are present"],
   [worker.includes("/api/airport-access") && worker.includes("normalizeAirportAccess"), "airport-access endpoint and normalizer are present"],
-  [html.includes("National Rail approves API access") && html.includes("official live departures board"), "partial coverage and departure-board scope are disclosed"],
+  [html.includes("National Rail approves API access") && html.includes("Official airport departure boards"), "partial coverage and departure-board scope are disclosed"],
   [html.includes("https://www.heathrow.com/departures") && html.includes("https://www.london-luton.co.uk/departures") && html.includes("https://www.stanstedairport.com/departures/"), "departure-specific airport links are present"],
   [html.includes("https://www.gatwickairport.com/flights") && html.includes("https://www.londoncityairport.com/flight-info/departures-arrivals"), "official combined airport boards are present"],
   [(html.match(/departures ↗/g) || []).length === 5, "all five airport links are labelled as departures"],
   [!html.includes("https://www.heathrow.com/arrivals"), "the former Heathrow arrivals link is absent"],
+  [nativeToolUrls.every((url) => toolBlock.includes(url)), "all four native London Advanced links share one block"],
+  [(toolBlock.match(/<a /g) || []).length === 4 && (html.match(/class="tool-links"/g) || []).length === 1, "the unified tools block contains exactly four links"],
+  [(toolBlock.match(/target="_blank"/g) || []).length === 4 && (toolBlock.match(/rel="noreferrer"/g) || []).length === 4, "all tool links open safely in a new tab"],
+  [!html.includes("card--pick") && !css.includes("card--pick") && !css.includes("pick-image"), "the separate Smart Navigation promotion is removed"],
+  [!html.includes("london-advanced-crowd-pressure.ppastorin.workers.dev") && !html.includes("/london-travel-fare-calculator"), "obsolete tool URLs are absent"],
   [!worker.match(/app_key\s*[:=]\s*["'][^"']+["']/i), "no TfL key is committed"],
   [!worker.match(/METOFFICE_API_KEY\s*[:=]\s*["'][^"']+["']/), "no Met Office key is committed"],
   [wrangler.kv_namespaces?.some((item) => item.binding === "WEATHER_CACHE" && !item.id), "weather KV is configured for automatic provisioning"],
   [wrangler.triggers?.crons?.includes("7 * * * *"), "hourly weather refresh is configured"],
-  [packageJson.version === "0.3.3", "package version is 0.3.3"],
+  [packageJson.version === "0.3.4", "package version is 0.3.4"],
   [packageJson.devDependencies?.wrangler === "4.129.0", "Wrangler version is pinned"]
 ];
 
@@ -62,4 +74,4 @@ if (failures.length) {
 }
 
 assertions.forEach(([, label]) => console.log(`PASS: ${label}`));
-console.log("Build 2.3 departure-board package validation passed.");
+console.log("Build 2.4 unified-tools package validation passed.");

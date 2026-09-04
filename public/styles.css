@@ -1,11 +1,11 @@
 :root {
   color-scheme: light;
-  --paper: #f4efe6;
-  --paper-deep: #e9dfd0;
+  --paper: #ffffff;
+  --paper-deep: #f2f2f0;
   --ink: #171714;
   --muted: #6c6860;
-  --line: #d8cdbd;
-  --white: #fffdf8;
+  --line: #ddd9d2;
+  --white: #ffffff;
   --red: #b6382f;
   --red-soft: #f5ddd8;
   --green: #1d6b50;
@@ -26,9 +26,7 @@ html { scroll-behavior: smooth; }
 body {
   margin: 0;
   min-width: 320px;
-  background:
-    radial-gradient(circle at 15% -10%, rgba(182, 56, 47, 0.09), transparent 28rem),
-    var(--paper);
+  background: var(--paper);
   color: var(--ink);
   font-family: var(--sans);
   font-size: 16px;
@@ -267,7 +265,7 @@ h2 {
   grid-column: span 4;
   min-width: 0;
   padding: 22px;
-  background: rgba(255, 253, 248, 0.88);
+  background: var(--white);
   border: 1px solid rgba(93, 75, 51, 0.14);
   border-radius: var(--radius);
   box-shadow: var(--shadow);
@@ -276,31 +274,7 @@ h2 {
 .card--weather,
 .card--travel { grid-column: span 6; }
 
-.card--pick {
-  display: grid;
-  grid-template-columns: 0.85fr 1.15fr;
-  gap: 22px;
-  grid-column: span 8;
-  padding: 0;
-  overflow: hidden;
-}
-
 .card--airports { grid-column: span 4; }
-
-.pick-image {
-  min-height: 290px;
-  background:
-    linear-gradient(135deg, rgba(23, 23, 20, 0.05), rgba(182, 56, 47, 0.22)),
-    url("./assets/london-map.webp") center / cover;
-  filter: saturate(0.68) contrast(0.92);
-}
-
-.pick-content {
-  align-self: center;
-  padding: 28px 28px 28px 0;
-}
-
-.pick-content p:not(.card-kicker) { color: var(--muted); }
 
 .card-header {
   display: flex;
@@ -615,11 +589,7 @@ select {
   .card,
   .card--weather,
   .card--travel,
-  .card--pick,
   .card--airports { grid-column: span 6; }
-  .card--pick { grid-template-columns: 1fr; }
-  .pick-image { min-height: 210px; }
-  .pick-content { padding: 0 22px 24px; }
   .phase-note { grid-template-columns: 1fr; gap: 15px; }
 }
 
@@ -645,7 +615,6 @@ select {
   .card,
   .card--weather,
   .card--travel,
-  .card--pick,
   .card--airports { grid-column: 1 / -1; }
 
   .airport-list li {
@@ -668,26 +637,4 @@ select {
 @media (prefers-reduced-motion: reduce) {
   html { scroll-behavior: auto; }
   *, *::before, *::after { transition: none !important; }
-}
-
-@media (prefers-color-scheme: dark) {
-  :root {
-    color-scheme: dark;
-    --paper: #1d1c19;
-    --paper-deep: #343029;
-    --ink: #f5efe5;
-    --muted: #b9b0a3;
-    --line: #474139;
-    --white: #282622;
-    --red: #ef766b;
-    --red-soft: #472724;
-    --green: #84d5b2;
-    --green-soft: #233d33;
-    --amber: #f1bf6e;
-    --amber-soft: #48381e;
-    --blue: #80ade0;
-    --shadow: 0 18px 50px rgba(0, 0, 0, 0.2);
-  }
-  .card { background: rgba(40, 38, 34, 0.9); }
-  select { background: var(--paper-deep); }
 }

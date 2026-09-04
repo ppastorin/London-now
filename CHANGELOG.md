@@ -1,5 +1,13 @@
 # Changelog
 
+## 0.3.4 — 4 September 2026
+
+- Consolidated all London Advanced destinations into one four-link tools card.
+- Added London by Mood and replaced the Escape the Crowds and fare-calculator Worker/legacy URLs with native `londonadvanced.com` pages.
+- Removed the separate map-based Smart Navigation promotion.
+- Fixed the dashboard to a white background and removed the automatic dark-theme override.
+- Kept the live TfL, weather, airport-access and departure-board behaviour unchanged.
+
 ## 0.3.3 — 4 September 2026
 
 - Replaced the Heathrow arrivals link with its official live departures board.
