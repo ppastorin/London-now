@@ -21,7 +21,7 @@ export default {
           : "ready";
       return json({
         status: weatherState === "ready" ? "ok" : "configuration-required",
-        version: "0.3.2",
+        version: "0.3.3",
         integrations: { tfl: "live", weather: weatherState, airportAccess: "partial-live" },
         checkedAt: new Date().toISOString()
       }, weatherState === "ready" ? 200 : 503, { "cache-control": "no-store" });

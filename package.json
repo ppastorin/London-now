@@ -1,9 +1,9 @@
 {
   "name": "london-now",
-  "version": "0.3.2",
+  "version": "0.3.3",
   "private": true,
   "type": "module",
-  "description": "London Now with live TfL, Met Office weather and partial airport-access status.",
+  "description": "London Now with live TfL, Met Office weather, partial airport access and official departure boards.",
   "scripts": {
     "check": "node --check public/app.js && node --check worker/index.js && node scripts/validate.mjs && node --test tests/*.test.mjs",
     "dev": "wrangler dev",

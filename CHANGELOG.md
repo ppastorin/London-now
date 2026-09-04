@@ -1,5 +1,13 @@
 # Changelog
 
+## 0.3.3 — 4 September 2026
+
+- Replaced the Heathrow arrivals link with its official live departures board.
+- Replaced the Luton and Stansted general flight-information links with official departures pages.
+- Pointed Gatwick and London City to their official combined live flight boards, which do not expose stable departure-only URLs.
+- Relabelled all five airport actions as departures and kept them opening in a new tab.
+- Left the TfL, Met Office, airport-access API and Google Sites embed configuration unchanged.
+
 ## 0.3.2 — 4 September 2026
 
 - Added `/api/airport-access`, derived from the already-approved TfL feed.

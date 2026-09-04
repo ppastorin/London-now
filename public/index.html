@@ -28,8 +28,8 @@
   </header>
 
   <div class="demo-banner" role="status">
-    <strong>Live build 2.2</strong>
-    <span>TfL, Met Office weather and selected airport access routes are live. National Rail approval is pending.</span>
+    <strong>Live build 2.3</strong>
+    <span>TfL, Met Office weather and selected airport access routes are live. Official airport departure boards are one click away.</span>
   </div>
 
   <main id="dashboard" class="page-shell">
@@ -134,12 +134,12 @@
         <ul class="airport-list" id="airportList" aria-live="polite" aria-busy="true">
           <li class="loading-row"><span class="loading-bar"></span><span>Checking airport access routes…</span></li>
         </ul>
-        <div class="official-boards" aria-label="Official airport flight boards">
-          <a data-airport-link="LHR" href="https://www.heathrow.com/arrivals" target="_blank" rel="noreferrer">LHR board ↗</a>
-          <a data-airport-link="LGW" href="https://www.gatwickairport.com/flights/" target="_blank" rel="noreferrer">LGW board ↗</a>
-          <a data-airport-link="LTN" href="https://www.london-luton.co.uk/flights" target="_blank" rel="noreferrer">LTN board ↗</a>
-          <a data-airport-link="STN" href="https://www.stanstedairport.com/flight-information/" target="_blank" rel="noreferrer">STN board ↗</a>
-          <a data-airport-link="LCY" href="https://www.londoncityairport.com/flight-information" target="_blank" rel="noreferrer">LCY board ↗</a>
+        <div class="official-boards" aria-label="Official airport departure boards">
+          <a data-airport-link="LHR" href="https://www.heathrow.com/departures" target="_blank" rel="noreferrer">LHR departures ↗</a>
+          <a data-airport-link="LGW" href="https://www.gatwickairport.com/flights" target="_blank" rel="noreferrer" title="Open the live board, then select Departures">LGW departures ↗</a>
+          <a data-airport-link="LTN" href="https://www.london-luton.co.uk/departures" target="_blank" rel="noreferrer">LTN departures ↗</a>
+          <a data-airport-link="STN" href="https://www.stanstedairport.com/departures/" target="_blank" rel="noreferrer">STN departures ↗</a>
+          <a data-airport-link="LCY" href="https://www.londoncityairport.com/flight-info/departures-arrivals" target="_blank" rel="noreferrer" title="Official combined departures and arrivals board">LCY departures ↗</a>
         </div>
         <footer class="source-row">
           <span id="airportFreshness">Waiting for TfL</span>
@@ -180,14 +180,14 @@
     <section class="phase-note" aria-labelledby="phaseNoteTitle">
       <div>
         <p class="card-kicker">Build status</p>
-        <h2 id="phaseNoteTitle">Build 2.2: airport access has started.</h2>
+        <h2 id="phaseNoteTitle">Build 2.3: live departure boards added.</h2>
       </div>
-      <p>Heathrow and London City access use live TfL status. Gatwick, Luton and Stansted remain clearly marked pending until National Rail approves API access. Flight operations are never inferred from transport conditions.</p>
+      <p>Heathrow and London City access use live TfL status. Gatwick, Luton and Stansted remain clearly marked pending until National Rail approves API access. Each airport now links to its official live departures board; Gatwick and London City use combined flight-board pages.</p>
     </section>
   </main>
 
   <footer class="site-footer">
-    <span>London Now · Live build 2.2</span>
+    <span>London Now · Live build 2.3</span>
     <span>Always confirm journeys with the official operator before travelling.</span>
   </footer>
 
