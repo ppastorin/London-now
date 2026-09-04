@@ -1,4 +1,10 @@
-# Build 2 validation — Met Office weather
+# Build 2.1 validation — Google Sites frame fix
+
+## Google Sites framing correction
+
+- [ ] `Content-Security-Policy` includes `https://www.gstatic.com` in `frame-ancestors`.
+- [ ] The existing HTML-code embed renders on the published Google Sites page.
+- [ ] The browser no longer displays `london-now.ppastorin.workers.dev refused to connect`.
 
 ## Credentials and configuration
 
@@ -16,7 +22,7 @@
 
 ## Preview APIs
 
-- [ ] `/api/health` returns HTTP 200, version `0.3.0`, TfL `live` and weather `ready`.
+- [ ] `/api/health` returns HTTP 200, version `0.3.1`, TfL `live` and weather `ready`.
 - [ ] `/api/weather` returns HTTP 200 and provider `Met Office Weather DataHub`.
 - [ ] Weather response contains at least today and the next two dates.
 - [ ] Temperatures and percentages are plausible numeric values or explicit nulls.

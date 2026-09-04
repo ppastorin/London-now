@@ -1,4 +1,17 @@
-# London Now — Build 2: live TfL and Met Office weather (v0.3.0)
+# London Now — Build 2.1: Google Sites frame fix (v0.3.1)
+
+This patch retains the live TfL and Met Office integrations from v0.3.0 and fixes the published Google Sites embed. Google Sites places custom HTML inside an intermediate frame served by `https://www.gstatic.com`. The previous Content Security Policy omitted that ancestor, so browsers refused to display London Now inside the nested frame.
+
+## Deploy this patch to the existing Worker
+
+1. Create a GitHub branch named `fix-google-sites-embed` from the current `main` branch.
+2. Upload the contents inside this package folder to the repository root on that branch.
+3. Commit with `Permit Google Sites intermediate frame`.
+4. Let Cloudflare build the preview.
+5. Confirm `/api/health` reports version `0.3.1`, then merge the branch into `main`.
+6. After production deployment, confirm the response header contains `https://www.gstatic.com` in `Content-Security-Policy` and republish the existing Google Sites page.
+
+Do not recreate the Worker, repository or Google Sites embed. The existing URL and iframe code remain correct.
 
 Deploy this only after Build 1 (`v0.2.0`) has passed and the production commit is tagged `phase-1-tfl-approved`. It updates the same `london-now` Worker.
 
@@ -76,7 +89,7 @@ It must return HTTP 200 with:
 ```json
 {
   "status": "ok",
-  "version": "0.3.0",
+    "version": "0.3.1",
   "integrations": {
     "tfl": "live",
     "weather": "ready"

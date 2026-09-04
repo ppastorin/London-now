@@ -30,7 +30,7 @@ const assertions = [
   [html.includes('./styles.css'), "stylesheet reference is present"],
   [html.includes('./app.js'), "script reference is present"],
   [css.includes('./assets/london-map.webp'), "map asset reference is present"],
-  [headers.includes("frame-ancestors") && headers.includes("https://sites.google.com"), "Google Sites frame policy is present"],
+  [headers.includes("frame-ancestors") && headers.includes("https://sites.google.com") && headers.includes("https://www.gstatic.com"), "complete Google Sites frame chain is permitted"],
   [!headers.includes("X-Frame-Options"), "obsolete X-Frame-Options is absent"],
   [wrangler.name === "london-now", "Wrangler name matches the Cloudflare Worker"],
   [wrangler.workers_dev === true, "workers.dev route is explicit"],
@@ -44,7 +44,7 @@ const assertions = [
   [!worker.match(/METOFFICE_API_KEY\s*[:=]\s*["'][^"']+["']/), "no Met Office key is committed"],
   [wrangler.kv_namespaces?.some((item) => item.binding === "WEATHER_CACHE" && !item.id), "weather KV is configured for automatic provisioning"],
   [wrangler.triggers?.crons?.includes("7 * * * *"), "hourly weather refresh is configured"],
-  [packageJson.version === "0.3.0", "package version is 0.3.0"],
+  [packageJson.version === "0.3.1", "package version is 0.3.1"],
   [packageJson.devDependencies?.wrangler === "4.129.0", "Wrangler version is pinned"]
 ];
 

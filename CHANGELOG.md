@@ -1,5 +1,11 @@
 # Changelog
 
+## 0.3.1 — 4 September 2026
+
+- Added `https://www.gstatic.com` to the `frame-ancestors` policy used by Google Sites' nested custom-code embed.
+- Added a regression assertion for the complete Google Sites frame chain.
+- Retained the v0.3.0 TfL and Met Office integrations unchanged.
+
 ## 0.3.0 — 4 September 2026
 
 - Added Met Office Weather DataHub Global Spot daily forecast.
