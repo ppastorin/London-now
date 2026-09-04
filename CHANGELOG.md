@@ -1,5 +1,13 @@
 # Changelog
 
+## 0.5.1 — 4 September 2026
+
+- Removed user-facing release-stage labels from the status banner, coverage note and footer.
+- Changed the desktop weather/transport split from equal columns to four/eight columns.
+- Made the weather card fit its content instead of stretching to the height of long TfL alerts.
+- Added condition-specific weather icons using the existing Met Office weather codes.
+- Added compact mobile sizing for the combined icon and temperature treatment.
+
 ## 0.5.0 — 4 September 2026
 
 - Added `/api/rail?station=CRS` using Rail Delivery Group's Live Departure Board product on Rail Data Marketplace.

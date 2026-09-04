@@ -53,7 +53,7 @@ export default {
       const configured = weatherState === "ready" && eventsState === "ready" && railState === "ready";
       return json({
         status: configured ? "ok" : "configuration-required",
-        version: "0.5.0",
+        version: "0.5.1",
         integrations: {
           tfl: "live",
           weather: weatherState,
@@ -241,7 +241,7 @@ async function getRailBoardResponse(request, env, context, options) {
     headers: {
       accept: "application/json",
       "x-apikey": env.NATIONAL_RAIL_API_KEY,
-      "user-agent": "LondonNow/0.5 (+https://www.londonadvanced.com/)"
+      "user-agent": "LondonNow/0.5.1 (+https://www.londonadvanced.com/)"
     },
     signal: AbortSignal.timeout(10000)
   });

@@ -271,8 +271,15 @@ h2 {
   box-shadow: var(--shadow);
 }
 
-.card--weather,
-.card--travel { grid-column: span 6; }
+.card--weather {
+  grid-column: span 4;
+  align-self: start;
+  background: linear-gradient(145deg, var(--white) 58%, #f2f6f8);
+}
+
+.card--weather .card-header { flex-wrap: wrap; }
+
+.card--travel { grid-column: span 8; }
 
 .card--airports { grid-column: span 4; }
 
@@ -288,6 +295,20 @@ h2 {
   font-family: var(--serif);
   font-size: 48px;
   line-height: 0.9;
+}
+
+.weather-now {
+  display: flex;
+  flex: 0 0 auto;
+  align-items: center;
+  gap: 8px;
+}
+
+.weather-icon {
+  width: 1.15em;
+  font-size: 42px;
+  line-height: 1;
+  text-align: center;
 }
 
 .weather-summary {
@@ -648,6 +669,10 @@ select {
   .alert-strip { grid-template-columns: auto 1fr; }
   .alert-strip a { grid-column: 2; }
   .dashboard-grid { gap: 12px; }
+  .card--weather .card-header { gap: 10px; }
+  .weather-now { gap: 4px; }
+  .weather-icon { font-size: 32px; }
+  .weather-mark { font-size: 38px; }
   .card,
   .card--weather,
   .card--travel,

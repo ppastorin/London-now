@@ -34,7 +34,8 @@ const nativeToolUrls = [
 ];
 
 const assertions = [
-  [html.includes("Live build 4") && html.includes("National Rail departures"), "current live-build scope notice is present"],
+  [html.includes("Live data") && html.includes("National Rail departures"), "live-data scope notice is present"],
+  [!/>[^<]*\bbuild(?:s|ing)?\b[^<]*</i.test(html), "user-facing build terminology is absent"],
   [!html.match(/18°|Sample alert|illustrative listing/i), "invented operational values are absent"],
   [html.includes('./styles.css'), "stylesheet reference is present"],
   [html.includes('./app.js'), "script reference is present"],
@@ -55,6 +56,7 @@ const assertions = [
   [worker.includes("api1.raildata.org.uk/1010-live-departure-board-dep1_2") && worker.includes("/api/rail") && worker.includes("normalizeRailBoard"), "National Rail adapter, endpoint and normalizer are present"],
   [worker.includes('"x-apikey": env.NATIONAL_RAIL_API_KEY') && worker.includes("RAIL_CACHE_SECONDS"), "National Rail secret and caching are configured"],
   [html.includes('id="stationDepartures"') && html.includes('id="stationStatus"') && html.includes('id="railFreshness"'), "live selected-station regions are present"],
+  [html.includes('id="weatherIcon"') && css.includes(".weather-icon") && css.includes("grid-column: span 8"), "weather icon and asymmetric desktop layout are present"],
   [worker.includes("TICKETMASTER_API_KEY") && worker.includes("EVENTS_CACHE_SECONDS"), "Ticketmaster secret and event caching are configured"],
   [html.includes('id="eventCategory"') && html.includes('value="music"') && html.includes('value="arts"') && html.includes('value="sports"') && html.includes('value="family"'), "event category selector is present"],
   [html.includes('id="eventList"') && html.includes('id="eventsFreshness"'), "live event result and freshness regions are present"],
@@ -75,7 +77,7 @@ const assertions = [
   [!worker.match(/NATIONAL_RAIL_API_KEY\s*[:=]\s*["'][^"']+["']/), "no National Rail key is committed"],
   [wrangler.kv_namespaces?.some((item) => item.binding === "WEATHER_CACHE" && !item.id), "weather KV is configured for automatic provisioning"],
   [wrangler.triggers?.crons?.includes("7 * * * *"), "hourly weather refresh is configured"],
-  [packageJson.version === "0.5.0", "package version is 0.5.0"],
+  [packageJson.version === "0.5.1", "package version is 0.5.1"],
   [packageJson.devDependencies?.wrangler === "4.129.0", "Wrangler version is pinned"]
 ];
 
@@ -86,4 +88,4 @@ if (failures.length) {
 }
 
 assertions.forEach(([, label]) => console.log(`PASS: ${label}`));
-console.log("Build 4 National-Rail package validation passed.");
+console.log("London Now v0.5.1 package validation passed.");

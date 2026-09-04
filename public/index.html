@@ -28,7 +28,7 @@
   </header>
 
   <div class="demo-banner" role="status">
-    <strong>Live build 4</strong>
+    <strong>Live data</strong>
     <span>TfL, Met Office weather, National Rail departures, airport access and Ticketmaster events are live.</span>
   </div>
 
@@ -64,7 +64,10 @@
             <p class="card-kicker" id="weatherKicker">Weather · checking</p>
             <h2 id="weatherTitle">London forecast</h2>
           </div>
-          <span class="weather-mark weather-mark--pending" id="weatherTemp" aria-label="Temperature unavailable">—°</span>
+          <span class="weather-now">
+            <span class="weather-icon" id="weatherIcon" aria-hidden="true">◌</span>
+            <span class="weather-mark weather-mark--pending" id="weatherTemp" aria-label="Temperature unavailable">—°</span>
+          </span>
         </header>
         <p class="weather-summary" id="weatherSummary">Loading the Met Office forecast…</p>
         <div class="metric-row" id="weatherMetrics" aria-label="Forecast details">
@@ -185,15 +188,15 @@
 
     <section class="phase-note" aria-labelledby="phaseNoteTitle">
       <div>
-        <p class="card-kicker">Build status</p>
-        <h2 id="phaseNoteTitle">Build 4: live National Rail departures.</h2>
+        <p class="card-kicker">Live coverage</p>
+        <h2 id="phaseNoteTitle">National Rail departures and airport access.</h2>
       </div>
       <p>The selected London terminal now shows live departures. Rail services from central London to Heathrow, Gatwick, Luton and Stansted are checked alongside TfL; the airport buttons remain the authoritative source for flight departures.</p>
     </section>
   </main>
 
   <footer class="site-footer">
-    <span>London Now · Live build 4</span>
+    <span>London Now</span>
     <span>Always confirm journeys with the official operator before travelling.</span>
   </footer>
 

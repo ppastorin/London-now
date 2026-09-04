@@ -1,4 +1,4 @@
-# Build 4 validation — National Rail
+# London Now v0.5.1 validation
 
 ## RDM subscription
 
@@ -23,7 +23,7 @@
 
 ## API checks
 
-- [ ] `/api/health` returns HTTP 200 and version `0.5.0`.
+- [ ] `/api/health` returns HTTP 200 and version `0.5.1`.
 - [ ] Health reports rail `ready` and airport access `live-access`.
 - [ ] `/api/rail?station=WAT` returns HTTP 200 and a `services` array.
 - [ ] WAT, VIC, PAD, LST, LBG, KGX and EUS are accepted.
@@ -48,6 +48,10 @@
 - [ ] All four London Advanced tool links remain in one block.
 - [ ] Airport and station preferences persist after refresh.
 - [ ] Google Sites uses the existing embed code and URL.
+- [ ] No user-facing header, coverage or footer text mentions a software build.
+- [ ] Desktop weather uses roughly one-third of the row and TfL two-thirds.
+- [ ] The weather card ends after its content instead of stretching to match long TfL alerts.
+- [ ] The weather icon matches sunny, cloudy, rain, snow, fog, thunder and night conditions.
 - [ ] Test 320, 390, 768 and 1280-pixel widths.
 - [ ] There is no horizontal scrollbar and only one usable vertical scroll path.
 
@@ -55,4 +59,4 @@
 
 - [ ] GitHub `main` triggered a successful Cloudflare deployment.
 - [ ] Production API, homepage and published Google Sites checks passed.
-- [ ] Approved commit is tagged `v0.5.0-national-rail-approved`.
+- [ ] Approved commit is tagged `v0.5.1-layout-approved`.

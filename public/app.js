@@ -46,6 +46,7 @@
       document.querySelector("#weatherTitle").textContent = "Check the official forecast";
       document.querySelector("#weatherTemp").textContent = "—°";
       document.querySelector("#weatherTemp").setAttribute("aria-label", "Temperature unavailable");
+      document.querySelector("#weatherIcon").textContent = "?";
       document.querySelector("#weatherSummary").textContent = error instanceof Error ? error.message : "Weather data could not be loaded.";
       document.querySelector("#weatherLow").textContent = "—";
       document.querySelector("#weatherRain").textContent = "—";
@@ -73,6 +74,7 @@
     document.querySelector("#weatherTemp").textContent = max;
     document.querySelector("#weatherTemp").setAttribute("aria-label", `Forecast high ${max}`);
     document.querySelector("#weatherTemp").classList.remove("weather-mark--pending");
+    document.querySelector("#weatherIcon").textContent = weatherIcon(day.weatherCode);
     document.querySelector("#weatherSummary").textContent = day.condition;
     document.querySelector("#weatherLow").textContent = formatMetric(day.minC, "°");
     document.querySelector("#weatherRain").textContent = formatMetric(day.rainProbability, "%");
@@ -84,6 +86,19 @@
 
   function formatMetric(value, suffix) {
     return value == null ? "—" : `${value}${suffix}`;
+  }
+
+  function weatherIcon(code) {
+    if (code === 0) return "🌙";
+    if (code === 1) return "☀️";
+    if ([2, 3].includes(code)) return "🌤️";
+    if ([5, 6].includes(code)) return "🌫️";
+    if ([7, 8].includes(code)) return "☁️";
+    if (code >= 9 && code <= 15) return "🌧️";
+    if (code >= 16 && code <= 21) return "🌨️";
+    if (code >= 22 && code <= 27) return "❄️";
+    if (code >= 28 && code <= 30) return "⛈️";
+    return "🌥️";
   }
 
   function londonDateKey(date) {

@@ -1,6 +1,6 @@
-# London Now — Build 4: National Rail (v0.5.0)
+# London Now — v0.5.1 layout refinement
 
-This release connects the approved London Now dashboard to Rail Delivery Group's **Live Departure Board** API through Rail Data Marketplace (RDM). It retains the existing TfL, Met Office, Ticketmaster, airport-board and Google Sites behaviour.
+This release retains the approved Rail Delivery Group **Live Departure Board** integration and refines the dashboard presentation. The desktop weather card is narrower and content-height, the TfL card has more room for disruption details, and the weather condition is represented by an icon. User-facing release-stage labels have been removed.
 
 It does not use the Darwin push feed and does not claim to show flight status. National Rail data is used only for train departures and airport access.
 
@@ -68,7 +68,7 @@ This release may be committed directly to `main`, matching the workflow used for
    Add live National Rail departures
    ```
 
-Do not upload the ZIP itself or create an enclosing `london-now-v0.5.0-national-rail/` directory in the repository.
+Do not upload the ZIP itself or create an enclosing `london-now-v0.5.1-layout-polish/` directory in the repository.
 
 ## 5. Cloudflare build
 
@@ -93,7 +93,7 @@ https://london-now.ppastorin.workers.dev/api/airport-access
 https://london-now.ppastorin.workers.dev/
 ```
 
-Health must return HTTP 200, version `0.5.0`, `integrations.rail: "ready"` and `integrations.airportAccess: "live-access"`.
+Health must return HTTP 200, version `0.5.1`, `integrations.rail: "ready"` and `integrations.airportAccess: "live-access"`.
 
 The rail response must return HTTP 200 with `provider: "National Rail Live Departure Board"`, station code `WAT`, a `services` array, a current `checkedAt`, and no credential.
 
@@ -122,7 +122,7 @@ VIC and PAD should return HTTP 200. XYZ must return HTTP 400. Repeating the same
 After production passes, tag the approved commit:
 
 ```text
-v0.5.0-national-rail-approved
+v0.5.1-layout-approved
 ```
 
 ## Rollback
