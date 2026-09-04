@@ -1,4 +1,4 @@
-# London Now v0.5.3 validation
+# London Now v0.5.4 validation
 
 ## RDM subscription
 
@@ -23,7 +23,7 @@
 
 ## API checks
 
-- [ ] `/api/health` returns HTTP 200 and version `0.5.3`.
+- [ ] `/api/health` returns HTTP 200 and version `0.5.4`.
 - [ ] Health reports rail `ready` and airport access `live-access`.
 - [ ] `/api/rail?station=WAT` returns HTTP 200 and a `services` array.
 - [ ] `/api/weather` returns HTTP 200 with `stale: false` and `refreshFailed: false`.
@@ -48,6 +48,9 @@
 - [ ] `/api/tfl`, `/api/weather` and `/api/events` still return HTTP 200.
 - [ ] Event date/category and weather date selection still work.
 - [ ] All four London Advanced tool links remain in one block.
+- [ ] Every tool card has the correct icon, title, description and destination.
+- [ ] Tool cards render in four desktop columns, two tablet columns and one mobile column.
+- [ ] Every tool card is fully clickable and has a visible keyboard focus state.
 - [ ] Airport and station preferences persist after refresh.
 - [ ] Google Sites uses the replacement code in `GOOGLE-SITES-EMBED.html`.
 - [ ] The redundant Live data banner and Live coverage section are absent.
@@ -65,4 +68,4 @@
 
 - [ ] GitHub `main` triggered a successful Cloudflare deployment.
 - [ ] Production API, homepage and published Google Sites checks passed.
-- [ ] Approved commit is tagged `v0.5.3-mobile-scroll-approved`.
+- [ ] Approved commit is tagged `v0.5.4-tool-cards-approved`.

@@ -1,5 +1,13 @@
 # Changelog
 
+## 0.5.4 — 4 September 2026
+
+- Replaced the plain London Advanced link list with four visual tool cards.
+- Added dedicated crowd, calculator, route and mood line icons without external image requests.
+- Added concise tool descriptions and enlarged the clickable link areas.
+- Added four-column desktop, two-column tablet and one-column mobile layouts.
+- Retained the v0.5.3 bounded mobile views, sticky controls and Google Sites scrolling fix.
+
 ## 0.5.3 — 4 September 2026
 
 - Prevented the Google Sites mobile embed from hiding content below its fixed container height.

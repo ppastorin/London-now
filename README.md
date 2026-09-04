@@ -1,6 +1,8 @@
-# London Now — v0.5.3 mobile embed fix
+# London Now — v0.5.4 visual tool cards
 
-This release prevents Google Sites from cutting off the dashboard on mobile. The desktop dashboard is unchanged. On screens up to 640 pixels, **Now** contains only weather and current transport, while **Flights**, **Events** and the new **Tools** tab expose the other sections without creating one extremely tall document. The controls remain available while scrolling.
+This release replaces the plain London Advanced link list with four visual tool cards. Each card has a purpose-specific line icon, a concise description and a larger clickable area. The desktop layout uses four columns; tablet uses two and mobile uses one.
+
+The v0.5.3 mobile navigation and Google Sites scrolling fix are retained. On screens up to 640 pixels, the Tools tab displays a single-column list that stays comfortably within the embedded viewport.
 
 The package also contains `GOOGLE-SITES-EMBED.html`. Its code gives the embedded dashboard one touch-scrollable viewport and does not require manual dragging or height adjustment in Google Sites.
 
@@ -78,10 +80,10 @@ This release may be committed directly to `main`, matching the workflow used for
 6. Commit with:
 
    ```text
-   Fix mobile Google Sites navigation
+   Add visual London Advanced tool cards
    ```
 
-Do not upload the ZIP itself or create an enclosing `london-now-v0.5.3-mobile-scroll/` directory in the repository.
+Do not upload the ZIP itself or create an enclosing `london-now-v0.5.4-tool-cards/` directory in the repository.
 
 ## 5. Cloudflare build
 
@@ -114,7 +116,7 @@ https://london-now.ppastorin.workers.dev/api/airport-access
 https://london-now.ppastorin.workers.dev/
 ```
 
-Health must return HTTP 200, version `0.5.3`, `integrations.rail: "ready"` and `integrations.airportAccess: "live-access"`.
+Health must return HTTP 200, version `0.5.4`, `integrations.rail: "ready"` and `integrations.airportAccess: "live-access"`.
 
 The weather response must return HTTP 200 with `stale: false`, `refreshFailed: false` and a reasonably recent `fetchedAt`. Immediately after deployment, an earlier edge-cached response can remain visible for up to five minutes; wait or hard-refresh before diagnosing it as stale.
 
@@ -147,7 +149,7 @@ VIC and PAD should return HTTP 200. XYZ must return HTTP 400. Repeating the same
 After production passes, tag the approved commit:
 
 ```text
-v0.5.3-mobile-scroll-approved
+v0.5.4-tool-cards-approved
 ```
 
 ## Rollback

@@ -39,6 +39,9 @@ const assertions = [
   [!html.includes('class="demo-banner"') && !html.includes('class="phase-note"'), "redundant status banner and coverage section are absent"],
   [html.includes('data-mobile-views="flights"') && html.includes('data-mobile-views="events"') && html.includes('data-mobile-views="tools"'), "mobile cards are separated into bounded views"],
   [html.includes('data-view="tools"') && css.includes(".view-tab--mobile-only") && css.includes("position: sticky"), "mobile Tools tab and sticky controls are present"],
+  [(toolBlock.match(/class="tool-icon"/g) || []).length === 4 && (toolBlock.match(/<svg /g) || []).length === 4, "each London Advanced tool has a dedicated inline icon"],
+  [toolBlock.includes("Find quieter places and better times") && toolBlock.includes("Compare fares before choosing a ticket") && toolBlock.includes("Plan a route around nearby discoveries") && toolBlock.includes("Choose places that match your atmosphere"), "tool cards explain the purpose of each destination"],
+  [css.includes("grid-template-columns: repeat(4, minmax(0, 1fr))") && css.includes(".tool-link { min-height: 94px; }") && css.includes(".tool-links { grid-template-columns: 1fr; }"), "tool cards adapt from four columns to one mobile column"],
   [embed.includes("height: 100vh") && embed.includes('scrolling="yes"') && embed.includes("overflow: hidden") && embed.includes("?embed=google-sites"), "Google Sites embed supplies one touch-scrollable dashboard viewport"],
   [css.includes("is-google-sites-embed") && css.includes("scrollbar-width: none") && css.includes("overscroll-behavior-y: contain"), "embedded document keeps touch scrolling without a duplicate visible scrollbar"],
   [!/>[^<]*\bbuild(?:s|ing)?\b[^<]*</i.test(html), "user-facing build terminology is absent"],
@@ -84,7 +87,7 @@ const assertions = [
   [!worker.match(/NATIONAL_RAIL_API_KEY\s*[:=]\s*["'][^"']+["']/), "no National Rail key is committed"],
   [wrangler.kv_namespaces?.some((item) => item.binding === "WEATHER_CACHE" && !item.id), "weather KV is configured for automatic provisioning"],
   [wrangler.triggers?.crons?.includes("7 * * * *"), "hourly weather refresh is configured"],
-  [packageJson.version === "0.5.3", "package version is 0.5.3"],
+  [packageJson.version === "0.5.4", "package version is 0.5.4"],
   [packageJson.devDependencies?.wrangler === "4.129.0", "Wrangler version is pinned"]
 ];
 
@@ -95,4 +98,4 @@ if (failures.length) {
 }
 
 assertions.forEach(([, label]) => console.log(`PASS: ${label}`));
-console.log("London Now v0.5.3 package validation passed.");
+console.log("London Now v0.5.4 package validation passed.");

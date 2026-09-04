@@ -512,19 +512,73 @@ h2 {
 
 .event-message { grid-template-columns: 1fr !important; }
 
-.tool-links { display: grid; }
+.card--events { grid-column: span 8; }
+.card--tools { grid-column: 1 / -1; }
 
-.tool-links a {
-  display: flex;
-  justify-content: space-between;
-  gap: 12px;
-  padding: 15px 0;
-  border-top: 1px solid var(--line);
-  text-decoration: none;
-  font-weight: 800;
+.tool-links {
+  display: grid;
+  grid-template-columns: repeat(4, minmax(0, 1fr));
+  gap: 10px;
 }
 
-.tool-links a:hover span:first-child { text-decoration: underline; text-underline-offset: 4px; }
+.tool-link {
+  display: grid;
+  grid-template-columns: 42px minmax(0, 1fr) auto;
+  align-items: center;
+  gap: 11px;
+  min-height: 104px;
+  padding: 14px;
+  border: 1px solid var(--line);
+  border-radius: 14px;
+  background: linear-gradient(145deg, #fff, var(--paper-deep));
+  text-decoration: none;
+  transition: border-color 160ms ease, box-shadow 160ms ease, transform 160ms ease;
+}
+
+.tool-link:hover {
+  transform: translateY(-2px);
+  border-color: color-mix(in srgb, currentColor 28%, var(--line));
+  box-shadow: 0 10px 24px rgba(49, 39, 25, 0.09);
+}
+
+.tool-icon {
+  display: grid;
+  width: 42px;
+  height: 42px;
+  place-items: center;
+  border-radius: 12px;
+  background: var(--paper-deep);
+}
+
+.tool-icon svg {
+  width: 24px;
+  height: 24px;
+  fill: none;
+  stroke: currentColor;
+  stroke-width: 1.8;
+  stroke-linecap: round;
+  stroke-linejoin: round;
+}
+
+.tool-copy { min-width: 0; }
+.tool-copy strong,
+.tool-copy small { display: block; }
+.tool-copy strong { line-height: 1.2; }
+.tool-copy small {
+  margin-top: 4px;
+  color: var(--muted);
+  font-size: 12px;
+  font-weight: 500;
+  line-height: 1.35;
+}
+
+.tool-arrow { align-self: start; font-weight: 800; }
+.tool-link--crowds { color: var(--red); }
+.tool-link--fares { color: var(--blue); }
+.tool-link--routes { color: var(--green); }
+.tool-link--mood { color: var(--amber); }
+.tool-copy strong,
+.tool-arrow { color: var(--ink); }
 
 .site-footer {
   display: flex;
@@ -631,6 +685,9 @@ select {
   .card--weather,
   .card--travel,
   .card--airports { grid-column: span 6; }
+  .card--events,
+  .card--tools { grid-column: 1 / -1; }
+  .tool-links { grid-template-columns: 1fr 1fr; }
 }
 
 @media (max-width: 640px) {
@@ -681,6 +738,8 @@ select {
     grid-template-columns: 50px minmax(0, 1fr);
   }
   .event-action { grid-column: 2; }
+  .tool-links { grid-template-columns: 1fr; }
+  .tool-link { min-height: 94px; }
   .metric-row span { padding: 9px 5px; font-size: 13px; }
   .source-row { align-items: flex-start; flex-direction: column; }
   .source-links { align-items: flex-start; flex-wrap: wrap; }
