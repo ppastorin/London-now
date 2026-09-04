@@ -1,157 +1,90 @@
-# London Now — v0.5.4 visual tool cards
+# London Now — v0.5.5 TfL resilience
 
-This release replaces the plain London Advanced link list with four visual tool cards. Each card has a purpose-specific line icon, a concise description and a larger clickable area. The desktop layout uses four columns; tablet uses two and mobile uses one.
+This release fixes the TfL HTTP 429 issue caused when the Cloudflare secret is named `TFL_API_KEY`. Earlier releases read only `TFL_APP_KEY`; v0.5.5 prefers `TFL_API_KEY` and continues to accept the legacy name.
 
-The v0.5.3 mobile navigation and Google Sites scrolling fix are retained. On screens up to 640 pixels, the Tools tab displays a single-column list that stays comfortably within the embedded viewport.
+It also adds one controlled retry for transient TfL failures and, after at least one successful request, shows a last-confirmed status for up to five minutes instead of immediately replacing the dashboard with an error. The API marks that response with `stale: true`, `degraded: true` and `x-cache: STALE`.
 
-The package also contains `GOOGLE-SITES-EMBED.html`. Its code gives the embedded dashboard one touch-scrollable viewport and does not require manual dragging or height adjustment in Google Sites.
+## 1. Confirm the TfL product and key
 
-It does not use the Darwin push feed and does not claim to show flight status. National Rail data is used only for train departures and airport access.
+1. Sign in at <https://api-portal.tfl.gov.uk/>.
+2. Confirm that your application is subscribed to the free **500 requests per minute** product, rather than relying on anonymous access.
+3. Copy the application's API key. Do not paste it into GitHub or this package.
 
-## Weather freshness
-
-The Met Office Global Spot response is a forecast, not a second-by-second observation. London Now stores the last successful response in Cloudflare KV to avoid unnecessary calls against the free allowance.
-
-- A forecast less than 70 minutes old is served immediately.
-- At 70 minutes, the next dashboard request refreshes it from the Met Office before responding.
-- The hourly Cloudflare trigger remains as an additional background refresh.
-- If the Met Office request fails, the last valid forecast remains visible and is labelled **Refresh delayed** rather than leaving the card blank.
-
-The first request after the 70-minute threshold may therefore be slightly slower. A normal response exposes `stale: false` and `refreshFailed: false`; neither the API key nor the upstream payload is exposed.
-
-## 1. Subscribe to the correct RDM product
-
-1. Sign in at <https://raildata.org.uk/>.
-2. Open **Data product catalogue**.
-3. Search for `Live Departure Board`.
-4. Open **Live Departure Board** published by **Rail Delivery Group**. Its product page is:
-   <https://raildata.org.uk/dataProduct/P-d81d6eaf-8060-4467-a339-1c833e50cbbe/overview>
-5. Confirm that the product is marked **Open** and **API**.
-6. Select **Subscribe**.
-7. Review and accept the licence terms, then select **Subscribe** again.
-8. Open **My subscriptions**: <https://raildata.org.uk/dashboard/subscriptionHome/mySubscriptions>.
-9. Wait until the subscription status is **Active**. Account approval and product-subscription approval are separate states.
-
-Do not subscribe to **Live Departure Board - Staff Version**, **Live Next Departures Board**, **Service Details**, or a Darwin push product for this release.
-
-## 2. Retrieve and test the RDM credential
-
-1. In **My subscriptions**, select the active **Live Departure Board** subscription.
-2. Open its **Documentation** tab and confirm that the request uses a station CRS code.
-3. Open its **Specification** tab.
-4. Select the `GetDepartureBoard` operation.
-5. Copy the **Consumer Key**. Do not copy the Consumer Secret.
-6. Use **Try it** with:
-
-   | Parameter | Value |
-   |---|---|
-   | Station / CRS path | `WAT` |
-   | `numRows` | `6` |
-   | `timeOffset` | `0` |
-   | `timeWindow` | `120` |
-
-7. Send the test request. It should return HTTP 200, `locationName` for London Waterloo, CRS `WAT`, and a `trainServices` array. The test counts against the product allowance.
-
-The application uses the RDM endpoint documented for this product and sends the Consumer Key in the `x-apikey` request header.
-
-## 3. Add the Consumer Key to Cloudflare
+## 2. Store the preferred Cloudflare secret
 
 1. Open **Cloudflare → Workers & Pages → london-now**.
 2. Open **Settings → Variables and Secrets**.
-3. Add a new **Secret** named exactly:
+3. Add or edit an encrypted **Secret** named exactly:
 
    ```text
-   NATIONAL_RAIL_API_KEY
+   TFL_API_KEY
    ```
 
-4. Paste the RDM **Consumer Key** as the value and save it.
+4. Paste the TfL API key and save it.
+5. If `TFL_APP_KEY` already exists, it may remain temporarily. `TFL_API_KEY` takes precedence. Once production reports registered access, the old secret can be removed.
 
-Do not add the Consumer Secret. Do not put either credential in GitHub, `wrangler.jsonc`, browser code, screenshots or support messages. Retain the existing `METOFFICE_API_KEY`, `TICKETMASTER_API_KEY`, optional `TFL_APP_KEY`, `WEATHER_CACHE` and hourly trigger.
+Retain `METOFFICE_API_KEY`, `NATIONAL_RAIL_API_KEY`, `TICKETMASTER_API_KEY`, the existing `WEATHER_CACHE` binding and the hourly trigger. The existing KV binding is also used for the short-lived last-confirmed TfL snapshot; no new resource is required.
 
-## 4. Update the existing GitHub repository
+## 3. Update the existing repository
 
-This release may be committed directly to `main`, matching the workflow used for recent London Now updates.
+This release can be committed directly to `main`.
 
-1. Extract this ZIP.
-2. Open the existing GitHub repository and select `main`.
+1. Extract the ZIP.
+2. Open the existing `london-now` GitHub repository and select `main`.
 3. Choose **Add file → Upload files**.
-4. Upload the contents *inside* the extracted folder to the repository root.
-5. Confirm that the root contains `public/`, `worker/`, `tests/`, `package.json` and `wrangler.jsonc`.
+4. Upload the contents inside the extracted folder to the repository root.
+5. Confirm that `public/`, `worker/`, `tests/`, `package.json` and `wrangler.jsonc` remain at the root.
 6. Commit with:
 
    ```text
-   Add visual London Advanced tool cards
+   Fix TfL authenticated requests and fallback
    ```
 
-Do not upload the ZIP itself or create an enclosing `london-now-v0.5.4-tool-cards/` directory in the repository.
+Do not upload the ZIP or its enclosing folder. No Cloudflare build-setting or Google Sites embed change is required.
 
-## 5. Cloudflare build
+## 4. Validate production
 
-No build setting changes are required. Retain:
-
-| Setting | Value |
-|---|---|
-| Root directory | `/` |
-| Build command | `npm run check` |
-| Deploy command | `npm run deploy` |
-
-The existing Worker URL remains unchanged. After deployment, replace the current Google Sites embed with the code from `GOOGLE-SITES-EMBED.html`.
-
-### Replace the Google Sites block
-
-1. Open the London dashboard page in Google Sites edit mode.
-2. Select the existing dashboard embed and delete that block.
-3. Choose **Insert → Embed → Embed code**.
-4. Copy the complete contents of `GOOGLE-SITES-EMBED.html`, paste it into the box, then choose **Next → Insert**.
-5. Do not drag or resize the inserted block. Publish the site and test the published page on the phone; the editor preview is not a reliable mobile test.
-
-## 6. Production API validation
-
-Open:
+After Cloudflare finishes deploying, open:
 
 ```text
 https://london-now.ppastorin.workers.dev/api/health
-https://london-now.ppastorin.workers.dev/api/rail?station=WAT
+https://london-now.ppastorin.workers.dev/api/tfl
 https://london-now.ppastorin.workers.dev/api/airport-access
 https://london-now.ppastorin.workers.dev/
 ```
 
-Health must return HTTP 200, version `0.5.4`, `integrations.rail: "ready"` and `integrations.airportAccess: "live-access"`.
+`/api/health` must show version `0.5.5` and `"tfl": "registered"`.
 
-The weather response must return HTTP 200 with `stale: false`, `refreshFailed: false` and a reasonably recent `fetchedAt`. Immediately after deployment, an earlier edge-cached response can remain visible for up to five minutes; wait or hard-refresh before diagnosing it as stale.
+`/api/tfl` should return HTTP 200 with:
 
-The rail response must return HTTP 200 with `provider: "National Rail Live Departure Board"`, station code `WAT`, a `services` array, a current `checkedAt`, and no credential.
-
-An empty `services` array can be valid overnight. HTTP 401 means the wrong Consumer Key was stored. HTTP 403 usually means the product subscription is not Active or the key is for another RDM product. HTTP 404 points to a product-version or endpoint mismatch; compare the package endpoint with the URL shown in the active subscription's Specification tab before changing code.
-
-Test the allowlist:
-
-```text
-/api/rail?station=VIC
-/api/rail?station=PAD
-/api/rail?station=XYZ
+```json
+{
+  "accessMode": "registered",
+  "stale": false,
+  "degraded": false
+}
 ```
 
-VIC and PAD should return HTTP 200. XYZ must return HTTP 400. Repeating the same valid request should normally change `x-cache` from `MISS` to `HIT`.
+Refresh it after 75 seconds to force a new upstream cycle. A temporary upstream failure may instead return HTTP 200 with `stale: true` for no more than five minutes. The dashboard will say **TfL update delayed** and show the last confirmation time.
 
-## 7. Dashboard and Google Sites validation
+If health says `anonymous`, the active Worker does not have either supported secret. Check the spelling, ensure it is an encrypted Secret for `london-now`, save it, and redeploy.
 
-1. Open **Customise** and select at least three different London terminals.
-2. Confirm the station name, first three departures and official board link change.
-3. Confirm cancelled and materially delayed trains are highlighted, while missing values are not interpreted as on time.
-4. Check Heathrow, Gatwick, Luton and Stansted route rows. They should no longer say that RDM access is pending.
-5. Confirm all five official airport departure-board links still work.
-6. On mobile, confirm **Now** shows weather and transport, **Flights** shows airport access, **Events** shows Ticketmaster results, and **Tools** shows the four London Advanced links.
-7. Confirm the controls remain reachable while scrolling and switching tabs returns to the top of the selected section.
-8. Test the replacement Google Sites embed at 320, 390, 768 and 1280-pixel widths.
-9. Confirm every section can be reached, there is no horizontal scrollbar, and the app is not clipped at the bottom.
+If health says `registered` but `/api/tfl` still consistently returns HTTP 429, the code is sending a key; confirm in the TfL portal that this exact key belongs to an active application subscribed to the free product.
 
-After production passes, tag the approved commit:
+After all checks pass, tag the approved commit:
 
 ```text
-v0.5.4-tool-cards-approved
+v0.5.5-tfl-resilience-approved
 ```
+
+## Retained behaviour
+
+- Live Met Office forecast with request-time recovery and hourly refresh.
+- Live National Rail departures and public-transport airport access.
+- Ticketmaster event categories and London Advanced visual tool cards.
+- Bounded mobile views and the existing Google Sites scrolling fix.
+- Official airport departure-board links; the dashboard does not claim to provide live flight operations.
 
 ## Rollback
 
-If production fails, use Cloudflare's deployment history to roll back to v0.4.0 and revert the GitHub commit. A rollback does not remove the RDM subscription or secret.
+If the release causes a regression, use Cloudflare deployment history to restore v0.5.4 and revert the GitHub commit. Secrets are not removed by a rollback.

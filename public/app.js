@@ -149,7 +149,6 @@
         count.className = "status-chip status-chip--mixed";
         alertLabel.textContent = "TfL alert";
         alertText.textContent = disrupted.map((line) => `${line.name}: ${line.status}`).join(" · ");
-        alert.classList.remove("is-loading", "alert-strip--good", "alert-strip--error");
       } else {
         list.appendChild(createLineRow({
           name: "Included TfL lines",
@@ -161,11 +160,20 @@
         count.className = "status-chip status-chip--good";
         alertLabel.textContent = "TfL status";
         alertText.textContent = data.summary;
-        alert.classList.remove("is-loading", "alert-strip--error");
-        alert.classList.add("alert-strip--good");
       }
 
-      freshness.textContent = `TfL checked ${formatTime(data.checkedAt)}`;
+      alert.classList.remove("is-loading", "alert-strip--good", "alert-strip--error", "alert-strip--stale");
+      if (data.stale) {
+        count.textContent = "Update delayed";
+        count.className = "status-chip status-chip--mixed";
+        alertLabel.textContent = "TfL update delayed";
+        alertText.textContent = `Showing the status last confirmed ${formatTime(data.checkedAt)}. Check TfL before travelling.`;
+        alert.classList.add("alert-strip--stale");
+        freshness.textContent = `TfL last confirmed ${formatTime(data.checkedAt)}`;
+      } else {
+        if (!disrupted.length) alert.classList.add("alert-strip--good");
+        freshness.textContent = `TfL checked ${formatTime(data.checkedAt)}`;
+      }
     } catch (error) {
       list.replaceChildren(createLineRow({
         name: "Live status unavailable",
@@ -179,7 +187,7 @@
       freshness.textContent = "Live fetch failed · use official source";
       alertLabel.textContent = "Data issue";
       alertText.textContent = "TfL status could not be loaded. Check the official TfL page before travelling.";
-      alert.classList.remove("is-loading", "alert-strip--good");
+      alert.classList.remove("is-loading", "alert-strip--good", "alert-strip--stale");
       alert.classList.add("alert-strip--error");
     }
   }

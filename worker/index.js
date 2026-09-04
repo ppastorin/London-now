@@ -3,7 +3,10 @@ const MET_OFFICE_DAILY_URL = "https://data.hub.api.metoffice.gov.uk/sitespecific
 const TICKETMASTER_EVENTS_URL = "https://app.ticketmaster.com/discovery/v2/events.json";
 const NATIONAL_RAIL_DEPARTURES_URL = "https://api1.raildata.org.uk/1010-live-departure-board-dep1_2/LDBWS/api/20220120/GetDepartureBoard";
 const WEATHER_CACHE_KEY = "metoffice:global-spot:london:daily:v1";
+const TFL_LAST_GOOD_KEY = "tfl:status:last-good:v1";
 const TFL_CACHE_SECONDS = 75;
+const TFL_FALLBACK_MAX_AGE_MS = 5 * 60 * 1000;
+const TFL_FETCH_ATTEMPTS = 2;
 const RAIL_CACHE_SECONDS = 75;
 const WEATHER_REFRESH_AFTER_MS = 70 * 60 * 1000;
 const WEATHER_STALE_AFTER_MS = 2 * 60 * 60 * 1000;
@@ -54,9 +57,9 @@ export default {
       const configured = weatherState === "ready" && eventsState === "ready" && railState === "ready";
       return json({
         status: configured ? "ok" : "configuration-required",
-        version: "0.5.4",
+        version: "0.5.5",
         integrations: {
-          tfl: "live",
+          tfl: getTflApiKey(env) ? "registered" : "anonymous",
           weather: weatherState,
           rail: railState,
           airportAccess: railState === "ready" ? "live-access" : "partial-live",
@@ -155,29 +158,92 @@ async function handleEvents(request, env, context) {
 
 async function getTflResponse(request, env, context) {
   const cache = caches.default;
-  const cacheKey = new Request(new URL("/__cache/tfl", request.url).toString(), { method: "GET" });
+  const cacheKey = new Request(new URL("/__cache/tfl-v2", request.url).toString(), { method: "GET" });
   const cached = await cache.match(cacheKey);
   if (cached) return withCacheStatus(cached, "HIT");
 
   const upstreamUrl = new URL(TFL_STATUS_URL);
-  if (env.TFL_APP_KEY) upstreamUrl.searchParams.set("app_key", env.TFL_APP_KEY);
+  const apiKey = getTflApiKey(env);
+  if (apiKey) upstreamUrl.searchParams.set("app_key", apiKey);
 
   try {
-    const upstream = await fetch(upstreamUrl, {
-      headers: { accept: "application/json" },
-      signal: AbortSignal.timeout(8000)
-    });
-    if (!upstream.ok) throw new Error(`TfL returned HTTP ${upstream.status}`);
-
-    const response = json(normalizeTfl(await upstream.json()), 200, {
+    const upstream = await fetchTflWithRetry(upstreamUrl);
+    const status = {
+      ...normalizeTfl(await upstream.json()),
+      accessMode: apiKey ? "registered" : "anonymous",
+      stale: false,
+      degraded: false
+    };
+    const response = json(status, 200, {
       "cache-control": `public, max-age=30, s-maxage=${TFL_CACHE_SECONDS}`,
       "x-cache": "MISS"
     });
-    context.waitUntil(cache.put(cacheKey, response.clone()));
+    const writes = [cache.put(cacheKey, response.clone())];
+    if (env.WEATHER_CACHE) {
+      writes.push(env.WEATHER_CACHE.put(TFL_LAST_GOOD_KEY, JSON.stringify(status), { expirationTtl: 3600 }));
+    }
+    context.waitUntil(Promise.all(writes));
     return response;
   } catch (error) {
+    const snapshot = env.WEATHER_CACHE
+      ? await env.WEATHER_CACHE.get(TFL_LAST_GOOD_KEY, "json").catch(() => null)
+      : null;
+    if (isUsableTflSnapshot(snapshot)) {
+      return json({
+        ...snapshot,
+        accessMode: apiKey ? "registered" : "anonymous",
+        stale: true,
+        degraded: true,
+        warning: "TfL refresh failed; showing the last confirmed status",
+        refreshError: safeTflError(error)
+      }, 200, {
+        "cache-control": "public, max-age=15, s-maxage=30",
+        "x-cache": "STALE"
+      });
+    }
     return upstreamError("TfL status is temporarily unavailable", error, "Transport for London", "https://tfl.gov.uk/tube-dlr-overground/status/");
   }
+}
+
+export function getTflApiKey(env = {}) {
+  const value = env.TFL_API_KEY || env.TFL_APP_KEY;
+  return typeof value === "string" && value.trim() ? value.trim() : null;
+}
+
+async function fetchTflWithRetry(url) {
+  let lastError;
+  for (let attempt = 1; attempt <= TFL_FETCH_ATTEMPTS; attempt += 1) {
+    try {
+      const response = await fetch(url, {
+        headers: { accept: "application/json", "user-agent": "LondonNow/0.5.5 (+https://www.londonadvanced.com/)" },
+        signal: AbortSignal.timeout(4500)
+      });
+      if (response.ok) return response;
+      const error = new Error(`TfL returned HTTP ${response.status}`);
+      error.status = response.status;
+      throw error;
+    } catch (error) {
+      lastError = error;
+      const retryable = !error?.status || error.status === 429 || error.status >= 500;
+      if (!retryable || attempt === TFL_FETCH_ATTEMPTS) throw error;
+      await new Promise((resolve) => setTimeout(resolve, 300));
+    }
+  }
+  throw lastError;
+}
+
+export function isUsableTflSnapshot(snapshot, now = Date.now()) {
+  const checkedAt = Date.parse(snapshot?.checkedAt || "");
+  return Array.isArray(snapshot?.lines)
+    && Number.isFinite(checkedAt)
+    && now >= checkedAt
+    && now - checkedAt <= TFL_FALLBACK_MAX_AGE_MS;
+}
+
+function safeTflError(error) {
+  const status = Number(error?.status);
+  if (Number.isFinite(status)) return `HTTP ${status}`;
+  return error?.name === "TimeoutError" ? "timeout" : "upstream unavailable";
 }
 
 async function handleRail(request, env, context) {
@@ -242,7 +308,7 @@ async function getRailBoardResponse(request, env, context, options) {
     headers: {
       accept: "application/json",
       "x-apikey": env.NATIONAL_RAIL_API_KEY,
-      "user-agent": "LondonNow/0.5.4 (+https://www.londonadvanced.com/)"
+      "user-agent": "LondonNow/0.5.5 (+https://www.londonadvanced.com/)"
     },
     signal: AbortSignal.timeout(10000)
   });

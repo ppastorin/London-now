@@ -1,4 +1,13 @@
-# London Now v0.5.4 validation
+# London Now v0.5.5 validation
+
+## TfL authentication and resilience
+
+- [ ] The TfL portal application is subscribed to the free registered product.
+- [ ] Cloudflare has an encrypted secret named exactly `TFL_API_KEY`.
+- [ ] `/api/health` reports version `0.5.5` and TfL `registered`.
+- [ ] `/api/tfl` returns HTTP 200 with `accessMode: "registered"` and `stale: false` during normal service.
+- [ ] No API key appears in the JSON response, browser source or repository.
+- [ ] A delayed fallback is visibly labelled and never used when more than five minutes old.
 
 ## RDM subscription
 
@@ -23,7 +32,7 @@
 
 ## API checks
 
-- [ ] `/api/health` returns HTTP 200 and version `0.5.4`.
+- [ ] `/api/health` returns HTTP 200 and version `0.5.5`.
 - [ ] Health reports rail `ready` and airport access `live-access`.
 - [ ] `/api/rail?station=WAT` returns HTTP 200 and a `services` array.
 - [ ] `/api/weather` returns HTTP 200 with `stale: false` and `refreshFailed: false`.
@@ -68,4 +77,4 @@
 
 - [ ] GitHub `main` triggered a successful Cloudflare deployment.
 - [ ] Production API, homepage and published Google Sites checks passed.
-- [ ] Approved commit is tagged `v0.5.4-tool-cards-approved`.
+- [ ] Approved commit is tagged `v0.5.5-tfl-resilience-approved`.

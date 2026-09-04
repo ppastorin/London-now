@@ -59,6 +59,10 @@ const assertions = [
   [wrangler.assets?.binding === "ASSETS", "static asset binding is configured"],
   [wrangler.assets?.run_worker_first?.includes("/api/*"), "API routes run through the Worker"],
   [worker.includes("api.tfl.gov.uk") && worker.includes("/api/tfl"), "TfL adapter and endpoint are present"],
+  [worker.includes("env.TFL_API_KEY || env.TFL_APP_KEY") && worker.includes('accessMode: apiKey ? "registered" : "anonymous"'), "preferred and legacy TfL secret names are supported and observable"],
+  [worker.includes("TFL_FETCH_ATTEMPTS = 2") && worker.includes("fetchTflWithRetry"), "TfL transient failures receive one controlled retry"],
+  [worker.includes("TFL_FALLBACK_MAX_AGE_MS = 5 * 60 * 1000") && worker.includes("isUsableTflSnapshot") && worker.includes('"x-cache": "STALE"'), "TfL has a bounded last-confirmed fallback"],
+  [css.includes(".alert-strip--stale") && worker.includes("TFL_LAST_GOOD_KEY") && (await readFile(resolve(root, "public/app.js"), "utf8")).includes("TfL last confirmed"), "TfL delayed-refresh state is visible in the interface"],
   [worker.includes("data.hub.api.metoffice.gov.uk") && worker.includes("/api/weather"), "Met Office adapter and endpoint are present"],
   [worker.includes("WEATHER_REFRESH_AFTER_MS") && worker.includes("shouldRefreshWeather") && worker.includes('cacheStatus = "STALE"'), "weather cache has request-time recovery and stale fallback"],
   [worker.includes("/api/airport-access") && worker.includes("normalizeAirportAccess"), "airport-access endpoint and normalizer are present"],
@@ -82,12 +86,13 @@ const assertions = [
   [!html.includes("card--pick") && !css.includes("card--pick") && !css.includes("pick-image"), "the separate Smart Navigation promotion is removed"],
   [!html.includes("london-advanced-crowd-pressure.ppastorin.workers.dev") && !html.includes("/london-travel-fare-calculator"), "obsolete tool URLs are absent"],
   [!worker.match(/app_key\s*[:=]\s*["'][^"']+["']/i), "no TfL key is committed"],
+  [!worker.match(/TFL_API_KEY\s*[:=]\s*["'][^"']+["']/), "no preferred TfL secret value is committed"],
   [!worker.match(/METOFFICE_API_KEY\s*[:=]\s*["'][^"']+["']/), "no Met Office key is committed"],
   [!worker.match(/TICKETMASTER_API_KEY\s*[:=]\s*["'][^"']+["']/), "no Ticketmaster key is committed"],
   [!worker.match(/NATIONAL_RAIL_API_KEY\s*[:=]\s*["'][^"']+["']/), "no National Rail key is committed"],
   [wrangler.kv_namespaces?.some((item) => item.binding === "WEATHER_CACHE" && !item.id), "weather KV is configured for automatic provisioning"],
   [wrangler.triggers?.crons?.includes("7 * * * *"), "hourly weather refresh is configured"],
-  [packageJson.version === "0.5.4", "package version is 0.5.4"],
+  [packageJson.version === "0.5.5", "package version is 0.5.5"],
   [packageJson.devDependencies?.wrangler === "4.129.0", "Wrangler version is pinned"]
 ];
 
@@ -98,4 +103,4 @@ if (failures.length) {
 }
 
 assertions.forEach(([, label]) => console.log(`PASS: ${label}`));
-console.log("London Now v0.5.4 package validation passed.");
+console.log("London Now v0.5.5 package validation passed.");

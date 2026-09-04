@@ -1,5 +1,13 @@
 # Changelog
 
+## 0.5.5 — 4 September 2026
+
+- Added `TFL_API_KEY` as the preferred Cloudflare secret name while retaining `TFL_APP_KEY` compatibility.
+- Exposed registered versus anonymous TfL access through `/api/health` and `/api/tfl` without exposing the key.
+- Added one controlled retry for HTTP 429, server errors and network failures.
+- Added a five-minute KV-backed last-confirmed TfL fallback with explicit delayed-update labelling.
+- Changed the edge-cache key so the release cannot reuse an earlier anonymous TfL response.
+
 ## 0.5.4 — 4 September 2026
 
 - Replaced the plain London Advanced link list with four visual tool cards.

@@ -1,6 +1,6 @@
 import test from "node:test";
 import assert from "node:assert/strict";
-import { normalizeTfl } from "../worker/index.js";
+import { getTflApiKey, isUsableTflSnapshot, normalizeTfl } from "../worker/index.js";
 
 test("normalizes and prioritises disrupted TfL lines", () => {
   const result = normalizeTfl([
@@ -33,4 +33,18 @@ test("reports good service when no included line is disrupted", () => {
   const result = normalizeTfl([{ name: "DLR", lineStatuses: [{ statusSeverityDescription: "Good Service" }] }]);
   assert.equal(result.status, "good");
   assert.equal(result.disruptionCount, 0);
+});
+
+test("prefers TFL_API_KEY and retains TFL_APP_KEY compatibility", () => {
+  assert.equal(getTflApiKey({ TFL_API_KEY: " preferred ", TFL_APP_KEY: "legacy" }), "preferred");
+  assert.equal(getTflApiKey({ TFL_APP_KEY: " legacy " }), "legacy");
+  assert.equal(getTflApiKey({}), null);
+});
+
+test("accepts a last-confirmed TfL snapshot for no more than five minutes", () => {
+  const checkedAt = "2026-09-04T12:00:00.000Z";
+  const snapshot = { checkedAt, lines: [] };
+  assert.equal(isUsableTflSnapshot(snapshot, Date.parse(checkedAt) + 5 * 60 * 1000), true);
+  assert.equal(isUsableTflSnapshot(snapshot, Date.parse(checkedAt) + 5 * 60 * 1000 + 1), false);
+  assert.equal(isUsableTflSnapshot({ checkedAt }, Date.parse(checkedAt)), false);
 });

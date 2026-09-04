@@ -248,6 +248,11 @@ h2 {
 }
 
 .alert-strip--good .alert-label { background: var(--green); }
+.alert-strip--stale {
+  background: var(--amber-soft);
+  border-color: color-mix(in srgb, var(--amber) 32%, transparent);
+}
+.alert-strip--stale .alert-label { background: var(--amber); }
 .alert-strip--error { border-style: dashed; }
 .is-loading { opacity: 0.78; }
 
