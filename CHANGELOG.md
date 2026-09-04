@@ -1,5 +1,12 @@
 # Changelog
 
+## 0.2.0 — 4 September 2026
+
+- Added live TfL line status through a same-origin Worker endpoint.
+- Added short server-side caching, normalisation tests and failure states.
+- Removed invented operational weather, rail, airport and event values.
+- Added preview-branch deployment and acceptance instructions.
+
 ## 0.1.1 — 4 September 2026
 
 - Corrected the Wrangler Worker name from `london-now-phase-0` to `london-now` so it matches the existing Cloudflare project.

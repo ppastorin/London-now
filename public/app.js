@@ -18,6 +18,104 @@
   let activeView = "now";
   let preferences = readPreferences();
 
+  async function loadTfl() {
+    const list = document.querySelector("#tflLines");
+    const count = document.querySelector("#tflCount");
+    const freshness = document.querySelector("#tflFreshness");
+    const alert = document.querySelector("#tflAlert");
+    const alertLabel = document.querySelector("#tflAlertLabel");
+    const alertText = document.querySelector("#tflAlertText");
+
+    try {
+      const response = await fetch("./api/tfl", { headers: { accept: "application/json" } });
+      const data = await response.json();
+      if (!response.ok) throw new Error(data.error || `HTTP ${response.status}`);
+
+      const disrupted = data.lines.filter((line) => line.disrupted);
+      const goodCount = data.lines.length - disrupted.length;
+      list.replaceChildren();
+      list.setAttribute("aria-busy", "false");
+
+      if (disrupted.length) {
+        disrupted.forEach((line) => list.appendChild(createLineRow(line)));
+        if (goodCount) {
+          list.appendChild(createLineRow({
+            name: `${goodCount} other line${goodCount === 1 ? "" : "s"}`,
+            status: "Good Service",
+            details: "No issue reported by TfL",
+            disrupted: false
+          }));
+        }
+        count.textContent = `${disrupted.length} issue${disrupted.length === 1 ? "" : "s"}`;
+        count.className = "status-chip status-chip--mixed";
+        alertLabel.textContent = "TfL alert";
+        alertText.textContent = disrupted.map((line) => `${line.name}: ${line.status}`).join(" · ");
+        alert.classList.remove("is-loading", "alert-strip--good", "alert-strip--error");
+      } else {
+        list.appendChild(createLineRow({
+          name: "Included TfL lines",
+          status: "Good Service",
+          details: "Tube, DLR, London Overground and Elizabeth line",
+          disrupted: false
+        }));
+        count.textContent = "Good service";
+        count.className = "status-chip status-chip--good";
+        alertLabel.textContent = "TfL status";
+        alertText.textContent = data.summary;
+        alert.classList.remove("is-loading", "alert-strip--error");
+        alert.classList.add("alert-strip--good");
+      }
+
+      freshness.textContent = `TfL checked ${formatTime(data.checkedAt)}`;
+    } catch (error) {
+      list.replaceChildren(createLineRow({
+        name: "Live status unavailable",
+        status: "Check TfL",
+        details: error instanceof Error ? error.message : "Temporary data error",
+        disrupted: true
+      }));
+      list.setAttribute("aria-busy", "false");
+      count.textContent = "Unavailable";
+      count.className = "status-chip status-chip--mixed";
+      freshness.textContent = "Live fetch failed · use official source";
+      alertLabel.textContent = "Data issue";
+      alertText.textContent = "TfL status could not be loaded. Check the official TfL page before travelling.";
+      alert.classList.remove("is-loading", "alert-strip--good");
+      alert.classList.add("alert-strip--error");
+    }
+  }
+
+  function createLineRow(line) {
+    const item = document.createElement("li");
+    const dot = document.createElement("span");
+    dot.className = `mode-dot ${line.disrupted ? "mode-dot--tube" : "mode-dot--good"}`;
+    dot.setAttribute("aria-hidden", "true");
+
+    const body = document.createElement("span");
+    const name = document.createElement("strong");
+    const details = document.createElement("small");
+    name.textContent = line.name;
+    details.textContent = line.details || line.status;
+    body.append(name, details);
+
+    const status = document.createElement("span");
+    status.className = `status-text ${line.disrupted ? "status-text--warn" : "status-text--good"}`;
+    status.textContent = line.status;
+    item.append(dot, body, status);
+    return item;
+  }
+
+  function formatTime(value) {
+    const date = new Date(value);
+    if (Number.isNaN(date.getTime())) return "just now";
+    return new Intl.DateTimeFormat("en-GB", {
+      hour: "2-digit",
+      minute: "2-digit",
+      timeZone: "Europe/London",
+      timeZoneName: "short"
+    }).format(date);
+  }
+
   function readPreferences() {
     try {
       const saved = JSON.parse(localStorage.getItem(STORAGE_KEY));
@@ -139,4 +237,6 @@
   renderDates();
   applyPreferences();
   applyView();
+  loadTfl();
+  window.setInterval(loadTfl, 90_000);
 })();

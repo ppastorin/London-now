@@ -1,259 +1,133 @@
-# London Now — Phase 0 v0.1.1
+# London Now — Build 1: live TfL (v0.2.0)
 
-This is the static, zero-API prototype for the London Advanced real-time dashboard. It is designed to validate the information hierarchy, responsive layout, Google Sites embed and light customisation before any live data integration begins.
+This build replaces all invented operational values with either live TfL status, an explicit unavailable/not-connected state, or an official source link. It updates the existing `london-now` Worker and does not create another application.
 
-## Existing deployment: corrective update
+## What becomes live
 
-If `https://london-now.ppastorin.workers.dev` has already been deployed, **do not create another Worker**. Version 0.1.1 aligns the repository with that existing Cloudflare project:
+- Tube, DLR, London Overground and Elizabeth line status from the TfL Unified API
+- A compact priority alert built from current reported disruptions
+- TfL fetch time and clear upstream-failure state
+- Server-side short caching so visitors do not call TfL directly
 
-- Cloudflare Worker name: `london-now`
-- `wrangler.jsonc` name: `london-now`
-- Production URL: `https://london-now.ppastorin.workers.dev`
-- `workers.dev` and preview URLs: explicitly enabled
-- Wrangler: pinned to version `4.129.0`
+Weather, National Rail, airport access and events are intentionally not inferred. They remain link-only until their individual integrations pass later gates.
 
-Replace the files in the existing GitHub repository with this corrected package and commit them. The connected Cloudflare build will redeploy the same Worker. A successful build must no longer contain `Failed to match Worker name`.
+## Architecture
 
-## What is included
+The browser requests `/api/tfl` from the same `london-now` Worker. The Worker calls TfL, removes unnecessary fields and returns a small normalised response. The API is cached for 75 seconds. An optional TfL key can be stored as a Cloudflare secret; it never appears in browser code or GitHub.
 
-- Responsive desktop and mobile dashboard
-- Now, Travel, Flights and Events views
-- Today plus two future date controls
-- Browser-local preferences for airports, preferred mainline station and step-free notices
-- Direct links to official sources and existing London Advanced tools
-- Persistent, prominent warnings that every status and listing is sample data
-- Cloudflare Workers static-assets configuration
-- Security headers that permit embedding from Google Sites and the London Advanced domain
-- No cookies, analytics, live API calls, API keys, framework or build step
+## Step 1 — protect Phase 0
 
-The map image supplied with the project is used as a compressed editorial accent in the London Advanced Pick card. The supplied PDF is a visual reference only and is not redistributed in this package.
+Confirm the working Phase 0 state is committed on `main`, then create a release/tag named `phase-0-approved` in GitHub. Do not delete the existing Worker or disconnect its repository.
 
-## Phase 0 acceptance sequence
+## Step 2 — enable preview branch builds
 
-Complete the gates in order. Do not begin live integrations until all five pass.
+In Cloudflare:
 
-| Gate | Goal | Pass condition |
-|---|---|---|
-| 0A | Package integrity | `npm run check` prints only PASS lines |
-| 0B | Local behaviour | Controls, preferences and links work without console errors |
-| 0C | Responsive design | No horizontal overflow at 320, 390, 768 and 1280 px widths |
-| 0D | Cloudflare deployment | Public `workers.dev` URL loads over HTTPS and returns the supplied security headers |
-| 0E | Google Sites embed | Dashboard renders inside the published Site and the full-screen link opens correctly |
+1. Open **Workers & Pages → london-now → Settings → Builds**.
+2. Open **Branch control**.
+3. Keep `main` as the production branch.
+4. Enable builds for non-production branches.
+5. Set the non-production deploy command to `npm run preview` if Cloudflare exposes that field.
 
-## 1. Inspect and validate the package
+The production settings remain:
 
-Requirements: Git and Node.js 20 or newer. Python 3 is helpful for the simplest local server.
+| Setting | Value |
+|---|---|
+| Root directory | `/` |
+| Build command | `npm run check` |
+| Deploy command | `npm run deploy` |
 
-From the project folder:
+## Step 3 — upload Build 1 to a branch
 
-```bash
-npm run check
-```
+In GitHub:
 
-Expected final line:
+1. Open the existing `london-now` repository.
+2. Create a branch named `phase-1-tfl` from `main`.
+3. Upload the **contents inside this package folder** to the repository root on that branch.
+4. Commit with `Add live TfL status`.
 
-```text
-Phase 0 package validation passed.
-```
+The root must contain `worker/index.js`, `public/index.html`, `package.json` and `wrangler.jsonc`. Do not upload the enclosing folder as another level.
 
-## 2. Run locally
+## Step 4 — test the Cloudflare preview
 
-The easiest dependency-free option is:
-
-```bash
-python3 -m http.server 4173 --directory public
-```
-
-Open `http://localhost:4173`. Stop the server with `Ctrl+C`.
-
-An alternative that emulates Cloudflare static-assets handling is:
-
-```bash
-npm run dev
-```
-
-Wrangler may ask you to approve a one-off download. Open the local URL it prints.
-
-## 3. Perform the local checks
-
-Use `TEST-CHECKLIST.md`. The key checks are:
-
-1. Confirm the black Phase 0 banner is visible before any status information.
-2. Select Travel, Flights and Events; only the relevant cards should remain.
-3. Select another date; the events date badge should change.
-4. Open Customise, change airports and preferred station, save, then reload. The choices should remain in that browser.
-5. Reset preferences and confirm Heathrow, Gatwick and Stansted return.
-6. Open each external source in a new tab.
-7. Test narrow phone widths and keyboard-only navigation.
-
-## 4. Create the GitHub repository first
-
-Use one stable name across GitHub, Cloudflare and Wrangler: `london-now`. The names are technically allowed to differ, but doing so makes deployment configuration easier to get wrong and provides no benefit here.
-
-### GitHub website method
-
-1. Sign in to GitHub and select **New repository**.
-2. Repository name: `london-now`.
-3. Choose **Private** for Phase 0 unless you specifically want the source public.
-4. Do not add a README, `.gitignore` or licence; these are already included.
-5. Select **Create repository**.
-6. On the empty repository page, select **uploading an existing file**.
-7. Open the unzipped `london-now-phase-0` folder on your computer.
-8. Upload the **contents inside that folder**—`public`, `scripts`, `package.json`, `wrangler.jsonc`, `README.md`, `TEST-CHECKLIST.md` and `.gitignore`—not the enclosing folder itself.
-9. Commit directly to `main` with the message `Add London Now Phase 0`.
-
-The repository root must look like this:
+Cloudflare should build the non-production branch and create a version preview URL. Test these addresses using the preview hostname it supplies:
 
 ```text
-london-now/
-├── public/
-│   ├── assets/
-│   ├── _headers
-│   ├── app.js
-│   ├── index.html
-│   └── styles.css
-├── scripts/
-├── package.json
-├── wrangler.jsonc
-├── README.md
-└── TEST-CHECKLIST.md
+https://PREVIEW-HOST/api/health
+https://PREVIEW-HOST/api/tfl
+https://PREVIEW-HOST/
 ```
 
-If GitHub shows `london-now-phase-0/public/index.html`, the package was uploaded one directory too deep. Cloudflare's root directory would then need changing. Move the files to the repository root instead.
+Expected health response includes:
 
-### Command-line alternative
-
-Run from inside the unzipped `london-now-phase-0` folder, replacing the example account name:
-
-```bash
-git init
-git branch -M main
-git add .
-git commit -m "Add London Now Phase 0 prototype"
-git remote add origin https://github.com/YOUR-GITHUB-ACCOUNT/london-now.git
-git push -u origin main
+```json
+{
+  "status": "ok",
+  "version": "0.2.0",
+  "integrations": {
+    "tfl": "live",
+    "weather": "not-in-this-build"
+  }
+}
 ```
 
-Keep the repository private during Phase 0 if desired. Cloudflare's GitHub app can be granted access to one selected repository.
+Expected `/api/tfl` behaviour:
 
-## 5. Create and connect the Cloudflare Worker
+- HTTP 200
+- `provider` is `Transport for London`
+- `lines` is a non-empty array
+- every line has `name`, `status` and `disrupted`
+- `checkedAt` is recent
+- response header `x-cache` is `MISS` on an uncached request and normally `HIT` on a subsequent request
 
-This package uses Cloudflare Workers static assets, which is suitable for the free tier and does not require a Worker script.
+## Step 5 — optional TfL API key
 
-1. In Cloudflare, open **Workers & Pages**.
-2. Select **Create application**.
-3. Next to **Import a repository**, select **Get started**.
-4. Select the GitHub account and the `london-now` repository. If it is missing, configure the Cloudflare Workers & Pages GitHub app to access this repository.
-5. Set the Cloudflare project/Worker name to **exactly** `london-now`. This must match `"name": "london-now"` in `wrangler.jsonc`.
-6. Select `main` as the production branch.
-7. Use these build settings:
+TfL currently permits anonymous access at a lower published limit. For a small Phase 1 test, the 75-second server cache should be sufficient. For wider use, register for TfL open data and add the key without putting it in GitHub:
 
-   - Root directory: `/`
-   - Build command: `npm run check`
-   - Deploy command: `npm run deploy`
+1. Register at `https://api-portal.tfl.gov.uk/`.
+2. Subscribe to the available 500-requests-per-minute product.
+3. Copy the `app_key` from your profile.
+4. In Cloudflare open **london-now → Settings → Variables and Secrets**.
+5. Add a **secret** named `TFL_APP_KEY` and paste the key as its value.
+6. Redeploy the preview branch.
 
-8. Select **Save and Deploy**. Cloudflare reads `wrangler.jsonc` and publishes the `public` directory.
-9. Open `https://london-now.ppastorin.workers.dev`.
-10. Future commits to `main` will automatically build and deploy to the same Worker.
+The integration also works without this secret.
 
-The Worker name and the Wrangler `name` must match before the repository is connected. Cloudflare currently attempts to override some mismatches and may open a corrective pull request, but that leaves the dashboard configuration—not the repository—as the effective source of truth.
+## Step 6 — acceptance tests
 
-### If the Worker already exists
+Complete `TEST-CHECKLIST.md`. Do not merge if:
 
-For the deployment already created at `london-now.ppastorin.workers.dev`:
+- the dashboard shows invented status values;
+- `/api/tfl` exposes an API key;
+- a TfL failure leaves a permanent spinner;
+- the status card overflows on a phone;
+- the Google Sites preview introduces a second horizontal scrollbar.
 
-1. Do not create another application.
-2. Open the existing **london-now** Worker.
-3. Go to **Settings → Builds**.
-4. Confirm the connected repository and production branch are correct.
-5. In GitHub, replace the repository contents with v0.1.1 and commit to `main`.
-6. Cloudflare will start a new build automatically.
-7. Open its build log and confirm that the name-mismatch warning is gone.
-8. Confirm the final line still reports `https://london-now.ppastorin.workers.dev`.
+## Step 7 — promote to production
 
-Official references:
+1. Open a GitHub pull request from `phase-1-tfl` into `main`.
+2. Confirm the Cloudflare preview check passed.
+3. Merge the pull request.
+4. Wait for the production build to complete.
+5. Re-test:
 
-- [Cloudflare Workers Git integration](https://developers.cloudflare.com/workers/ci-cd/builds/git-integration/)
-- [Cloudflare static asset headers](https://developers.cloudflare.com/workers/static-assets/headers/)
-- [Wrangler configuration](https://developers.cloudflare.com/workers/wrangler/configuration/)
-
-## 6. Verify the deployed headers
-
-Replace the example address:
-
-```bash
-curl -I https://london-now.ppastorin.workers.dev
-```
-
-Confirm the response includes `content-security-policy`, `referrer-policy` and `x-content-type-options`, and does **not** include `x-frame-options`.
-
-The supplied Content Security Policy allows these iframe ancestors:
-
-- `https://sites.google.com`
-- `https://www.londonadvanced.com`
-- `https://londonadvanced.com`
-- `https://*.googleusercontent.com`
-
-If the final Google Sites custom domain differs, add its exact HTTPS origin to the `frame-ancestors` list in `public/_headers`, commit, push and let Cloudflare redeploy.
-
-## 7. Embed it in Google Sites
-
-1. Open the target Google Site in edit mode.
-2. Choose **Insert → Embed → By URL**.
-3. Paste the deployed `workers.dev` URL and choose the embedded-page preview.
-4. Stretch the embed to the full content width.
-5. Start with a height around 1,600 px, then adjust until there is no nested vertical scrollbar on desktop.
-6. Preview the Site in phone, tablet and desktop modes.
-7. Publish the Site and repeat the test on the published URL—not only the editor preview.
-8. Confirm **Open full screen** opens the dashboard in a new tab.
-
-Google Sites cannot automatically resize a cross-origin iframe to match changing content height. Keeping cards compact and providing the full-screen link are the Phase 0 mitigations.
-
-## 8. Freeze Phase 0 and decide whether to proceed
-
-When all acceptance gates pass:
-
-1. Tag the approved state:
-
-   ```bash
-   git tag phase-0-approved
-   git push origin phase-0-approved
+   ```text
+   https://london-now.ppastorin.workers.dev/api/health
+   https://london-now.ppastorin.workers.dev/api/tfl
+   https://london-now.ppastorin.workers.dev/
    ```
 
-2. Record screenshots at phone and desktop widths.
-3. Record the Google Sites page URL and Cloudflare deployment URL.
-4. Open Phase 1 only for weather. Do not connect transport, airports and events simultaneously.
+6. Test the existing Google Sites embed. Its URL does not change.
+7. Tag the approved commit `phase-1-tfl-approved`.
 
-## Free-source plan for later phases
+## Rollback
 
-Phase 0 does not consume these services. This matrix is the guardrail for later implementation.
+If production fails, use Cloudflare **Deployments** to roll back to the last Phase 0 version, then revert the merge commit in GitHub. Do not create a replacement Worker.
 
-| Area | Free route | Constraints and fallback |
-|---|---|---|
-| Weather | Met Office Weather DataHub free site-specific plan | Registration and API credentials required; the published free allowance must be checked before Phase 1. Cache on Cloudflare and link to Met Office/BBC forecast pages. Do not scrape either website. |
-| Tube, DLR, Overground | TfL Unified API | Anonymous access is rate-limited; a free account/API key raises the published allowance. Fetch from a Cloudflare Worker so the key is not exposed in the browser. |
-| Mainline rail | Rail Data Marketplace | Registration is free, but each dataset has its own licence/access terms. First fallback: show official National Rail disruption and station links rather than scraping. |
-| Airports | Official airport live-board links | Do not assume a free reusable feed. Heathrow advertises a developer API, but access/licensing must be confirmed before use; no equivalent free official public feeds are assumed for every London airport. Phase 0 therefore links out. |
-| Events | Ticketmaster Discovery API | Its public API has a free default quota but does not represent all London events. Time Out should be an outbound discovery source or a separately agreed editorial/licensing relationship—not scraped. |
-| Air quality | London Air Quality Network or UK government open data | Good optional widget after core travel sources. Verify update frequency and attribution before implementation. |
-| Crowding/value | Existing London Advanced tools | Prefer linking or integrating owned tools first; they are differentiated and avoid third-party data risk. |
+## Official references
 
-Useful official developer pages:
-
-- [TfL API portal](https://api-portal.tfl.gov.uk/)
-- [Met Office Weather DataHub](https://datahub.metoffice.gov.uk/)
-- [Rail Data Marketplace](https://raildata.org.uk/)
-- [Ticketmaster Discovery API](https://developer.ticketmaster.com/products-and-docs/apis/discovery-api/v2/)
-- [Heathrow developer portal](https://developer.heathrow.com/api-flights)
-
-## Phase boundaries
-
-- **Phase 0 — shell:** static sample data, responsive UI, preferences, GitHub/Cloudflare/Google Sites path.
-- **Phase 1 — weather:** one server-side Met Office integration, caching, stale-data state and monitoring.
-- **Phase 2 — London transport:** TfL status, accessibility notices and official deep links.
-- **Phase 3 — rail:** selected London terminals and disruptions using an approved Rail Data Marketplace source.
-- **Phase 4 — airports:** surface-access health first; flight status only where licensed free access is explicitly confirmed.
-- **Phase 5 — events:** Ticketmaster plus London Advanced editorial picks; no Time Out scraping.
-- **Phase 6 — personalisation:** saved routes, quiet-time/crowding context and optional air quality.
-
-Every live phase should add one adapter, cached server-side fetches, a visible freshness time, a stale/unavailable state, source attribution and tests before the next adapter begins.
+- [TfL Unified API](https://api.tfl.gov.uk/)
+- [TfL developer portal](https://api-portal.tfl.gov.uk/)
+- [Cloudflare preview URLs](https://developers.cloudflare.com/workers/configuration/previews/)
+- [Cloudflare build branches](https://developers.cloudflare.com/workers/ci-cd/builds/build-branches/)
+- [Cloudflare Workers static assets](https://developers.cloudflare.com/workers/static-assets/)

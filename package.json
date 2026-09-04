@@ -1,12 +1,14 @@
 {
-  "name": "london-now-phase-0",
-  "version": "0.1.1",
+  "name": "london-now",
+  "version": "0.2.0",
   "private": true,
-  "description": "Phase 0 static prototype for the London Now dashboard.",
+  "type": "module",
+  "description": "London Now Build 1 with live TfL status.",
   "scripts": {
-    "check": "node --check public/app.js && node scripts/validate.mjs",
+    "check": "node --check public/app.js && node --check worker/index.js && node scripts/validate.mjs && node --test tests/*.test.mjs",
     "dev": "wrangler dev",
-    "deploy": "wrangler deploy"
+    "deploy": "wrangler deploy",
+    "preview": "wrangler versions upload"
   },
   "devDependencies": {
     "wrangler": "4.129.0"

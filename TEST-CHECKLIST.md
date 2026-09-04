@@ -1,68 +1,43 @@
-# Phase 0 test checklist
+# Build 1 validation — live TfL
 
-Record the browser, device/viewport, result and any evidence for each item.
+## Automated package checks
 
-## A. Integrity
+- [ ] `npm install` completes.
+- [ ] `npm run check` passes syntax, configuration, fixture and normalisation tests.
+- [ ] No key, token or credential is present in GitHub.
 
-- [ ] `npm run check` passes.
-- [ ] The page loads with JavaScript disabled; content and source links remain readable.
-- [ ] Browser console shows no errors with JavaScript enabled.
-- [ ] Network panel shows no API or analytics requests.
-- [ ] No API keys or secrets exist in the repository.
+## Preview API
 
-## B. Sample-data safety
+- [ ] `/api/health` returns HTTP 200 and version `0.2.0`.
+- [ ] `/api/tfl` returns HTTP 200 and a non-empty `lines` array.
+- [ ] `checkedAt` is a valid recent timestamp.
+- [ ] A second request normally returns `x-cache: HIT`.
+- [ ] The response contains no `app_key`, subscription key or full upstream payload.
+- [ ] An invalid/unavailable upstream produces HTTP 502 JSON rather than HTML or an endless request.
 
-- [ ] The top Phase 0 warning appears before the dashboard.
-- [ ] Weather, travel, airports and events are each labelled sample or illustrative.
-- [ ] The footer tells visitors to confirm with the official operator.
-- [ ] No sample wording could reasonably be mistaken for current operational advice.
+## Preview interface
 
-## C. Controls and persistence
+- [ ] No Phase 0 sample alert, sample weather value, invented airport delay or invented event remains.
+- [ ] TfL disruptions appear before good-service lines.
+- [ ] When no disruption is reported, the card says good service without fabricating details.
+- [ ] The visible TfL timestamp uses London time.
+- [ ] TfL errors replace the loader and preserve the official TfL link.
+- [ ] Weather says not connected and links to Met Office/BBC.
+- [ ] National Rail, airports and events remain explicit link-only states.
 
-- [ ] Today and the next two days appear using the device date.
-- [ ] Changing the date updates the events badge.
-- [ ] Now, Travel, Flights and Events show only relevant cards.
-- [ ] Airport choices immediately affect airport rows and board links after saving.
-- [ ] Preferred station updates the travel card.
-- [ ] Turning off step-free notices hides that row.
-- [ ] Preferences remain after reload in the same browser.
-- [ ] Reset restores Heathrow, Gatwick, Stansted, Waterloo and step-free notices.
+## Responsive/accessibility regression
 
-## D. Responsive and accessible behaviour
+- [ ] No horizontal overflow at 320, 390, 768 and 1280 px.
+- [ ] TfL status text wraps without covering the line name.
+- [ ] View tabs, date controls and settings remain keyboard accessible.
+- [ ] Live updates are announced through the existing polite live regions.
+- [ ] Preferences persist after reload.
+- [ ] Google Sites embed still scrolls once and opens full screen correctly.
 
-- [ ] 320 px wide: no horizontal overflow; controls remain tappable.
-- [ ] 390 px wide: cards form one column and text does not clip.
-- [ ] 768 px wide: two-column cards are balanced.
-- [ ] 1280 px wide: content stays within its maximum width.
-- [ ] Text can be zoomed to 200% without losing controls or content.
-- [ ] Keyboard reaches Skip to dashboard, all tabs, settings and links.
-- [ ] Focus indicators are clearly visible.
-- [ ] Settings dialog closes with its close button, Escape and backdrop click.
-- [ ] Light and dark operating-system themes remain readable.
-- [ ] Reduced-motion preference causes no essential information loss.
+## Production gate
 
-## E. Links and source attribution
-
-- [ ] Met Office and BBC Weather links open correctly.
-- [ ] TfL and National Rail links open correctly.
-- [ ] Every visible selected airport has an official board link.
-- [ ] Time Out is an outbound browse link only.
-- [ ] All three London Advanced shortcuts open correctly.
-- [ ] External links open in a new tab without controlling the source tab.
-
-## F. Cloudflare and Google Sites
-
-- [ ] Cloudflare deployment succeeds from the `main` branch.
-- [ ] Pushing a commit triggers a fresh deployment.
-- [ ] HTTPS works without mixed-content warnings.
-- [ ] `_headers` values appear on the deployed response.
-- [ ] The published Google Site renders the iframe rather than refusing it.
-- [ ] No nested horizontal scrollbar appears in the embed.
-- [ ] The chosen embed height is acceptable on desktop and mobile preview.
-- [ ] Open full screen works from inside the Google Sites embed.
-
-## Exit decision
-
-- [ ] All blocking failures are fixed and retested.
-- [ ] Phase 0 is tagged `phase-0-approved`.
-- [ ] Phase 1 scope is limited to weather, caching, freshness and failure states.
+- [ ] Preview branch deployment passed before merge.
+- [ ] Production `/api/health`, `/api/tfl` and `/` passed after merge.
+- [ ] Cloudflare build log has no Worker-name mismatch.
+- [ ] Previous Phase 0 deployment remains available for rollback.
+- [ ] Approved commit is tagged `phase-1-tfl-approved`.

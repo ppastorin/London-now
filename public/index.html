@@ -28,8 +28,8 @@
   </header>
 
   <div class="demo-banner" role="status">
-    <strong>Phase 0 prototype</strong>
-    <span>All conditions, delays and events below are illustrative sample data—not live travel advice.</span>
+    <strong>Live build 1</strong>
+    <span>TfL line status is live. Weather, airport access and events remain official-link services until their own builds are validated.</span>
   </div>
 
   <main id="dashboard" class="page-shell">
@@ -51,9 +51,9 @@
       </div>
     </section>
 
-    <section class="alert-strip" data-card data-views="now travel" aria-label="Sample priority alert">
-      <span class="alert-label">Sample alert</span>
-      <span>District line: minor delays between Earl’s Court and Wimbledon.</span>
+    <section class="alert-strip is-loading" id="tflAlert" data-card data-views="now travel" aria-label="TfL priority status" aria-live="polite">
+      <span class="alert-label" id="tflAlertLabel">Checking TfL</span>
+      <span id="tflAlertText">Loading the latest line status…</span>
       <a href="https://tfl.gov.uk/tube-dlr-overground/status/" target="_blank" rel="noreferrer">Check TfL <span aria-hidden="true">↗</span></a>
     </section>
 
@@ -61,19 +61,14 @@
       <article class="card card--weather" data-card data-views="now">
         <header class="card-header">
           <div>
-            <p class="card-kicker">Weather · sample</p>
-            <h2>London outlook</h2>
+            <p class="card-kicker">Weather · next build</p>
+            <h2>Not connected yet</h2>
           </div>
-          <span class="weather-mark" aria-hidden="true">18°</span>
+          <span class="weather-mark weather-mark--pending" aria-hidden="true">—°</span>
         </header>
-        <p class="weather-summary">Bright spells, a brisk breeze and a chance of a short afternoon shower.</p>
-        <div class="metric-row" aria-label="Sample weather details">
-          <span><strong>12°</strong> low</span>
-          <span><strong>35%</strong> rain</span>
-          <span><strong>14 mph</strong> wind</span>
-        </div>
+        <p class="weather-summary">Build 2 will use the Met Office Weather DataHub. Until then, use the official forecasts below.</p>
         <footer class="source-row">
-          <span>Sample only</span>
+          <span>No forecast displayed</span>
           <span class="source-links">
             <a href="https://weather.metoffice.gov.uk/forecast/gcpvj0v07" target="_blank" rel="noreferrer">Met Office ↗</a>
             <a href="https://www.bbc.co.uk/weather/2643743" target="_blank" rel="noreferrer">BBC ↗</a>
@@ -84,30 +79,28 @@
       <article class="card card--travel" data-card data-views="now travel">
         <header class="card-header">
           <div>
-            <p class="card-kicker">Getting around · sample</p>
-            <h2>Network pulse</h2>
+            <p class="card-kicker">Getting around · live</p>
+            <h2>TfL network pulse</h2>
           </div>
-          <span class="status-chip status-chip--mixed">2 notices</span>
+          <span class="status-chip status-chip--mixed" id="tflCount">Checking…</span>
         </header>
-        <ul class="status-list">
-          <li>
-            <span class="mode-dot mode-dot--tube" aria-hidden="true"></span>
-            <span><strong>Tube & rail</strong><small>Most routes shown as running normally</small></span>
-            <span class="status-text status-text--good">Good</span>
-          </li>
+        <ul class="status-list" id="tflLines" aria-live="polite" aria-busy="true">
+          <li class="loading-row"><span class="loading-bar"></span><span>Contacting Transport for London…</span></li>
+        </ul>
+        <ul class="status-list status-list--secondary">
           <li id="stationRow">
             <span class="mode-dot mode-dot--rail" aria-hidden="true"></span>
-            <span><strong id="stationName">London Waterloo</strong><small>Sample departures view</small></span>
-            <span class="status-text">View</span>
+            <span><strong id="stationName">London Waterloo</strong><small>National Rail departures are not connected yet</small></span>
+            <a class="status-text" href="https://www.nationalrail.co.uk/live-trains/departures/" target="_blank" rel="noreferrer">Check ↗</a>
           </li>
           <li id="stepFreeRow">
             <span class="mode-dot mode-dot--access" aria-hidden="true"></span>
-            <span><strong>Step-free access</strong><small>One sample lift notice nearby</small></span>
-            <span class="status-text status-text--warn">Check</span>
+            <span><strong>Step-free access</strong><small>Use TfL’s current accessibility information</small></span>
+            <a class="status-text" href="https://tfl.gov.uk/transport-accessibility/" target="_blank" rel="noreferrer">Check ↗</a>
           </li>
         </ul>
         <footer class="source-row">
-          <span>Sample only</span>
+          <span id="tflFreshness">Waiting for TfL</span>
           <span class="source-links">
             <a href="https://tfl.gov.uk/tube-dlr-overground/status/" target="_blank" rel="noreferrer">TfL ↗</a>
             <a href="https://www.nationalrail.co.uk/status-and-disruptions/" target="_blank" rel="noreferrer">National Rail ↗</a>
@@ -128,17 +121,17 @@
       <article class="card card--airports" data-card data-views="now flights">
         <header class="card-header">
           <div>
-            <p class="card-kicker">Airport access · sample</p>
+            <p class="card-kicker">Airports · official links</p>
             <h2>Your airports</h2>
           </div>
           <button class="inline-control" type="button" data-open-settings>Change</button>
         </header>
         <ul class="airport-list" id="airportList">
-          <li data-airport="LHR"><span><strong>LHR</strong> Heathrow</span><span class="status-text status-text--good">Typical</span></li>
-          <li data-airport="LGW"><span><strong>LGW</strong> Gatwick</span><span class="status-text status-text--warn">Allow extra time</span></li>
-          <li data-airport="LTN"><span><strong>LTN</strong> Luton</span><span class="status-text">Check route</span></li>
-          <li data-airport="STN"><span><strong>STN</strong> Stansted</span><span class="status-text status-text--good">Typical</span></li>
-          <li data-airport="LCY"><span><strong>LCY</strong> London City</span><span class="status-text">Check route</span></li>
+          <li data-airport="LHR"><span><strong>LHR</strong> Heathrow</span><span class="status-text">Official board below</span></li>
+          <li data-airport="LGW"><span><strong>LGW</strong> Gatwick</span><span class="status-text">Official board below</span></li>
+          <li data-airport="LTN"><span><strong>LTN</strong> Luton</span><span class="status-text">Official board below</span></li>
+          <li data-airport="STN"><span><strong>STN</strong> Stansted</span><span class="status-text">Official board below</span></li>
+          <li data-airport="LCY"><span><strong>LCY</strong> London City</span><span class="status-text">Official board below</span></li>
         </ul>
         <div class="official-boards" aria-label="Official airport flight boards">
           <a data-airport-link="LHR" href="https://www.heathrow.com/arrivals" target="_blank" rel="noreferrer">LHR board ↗</a>
@@ -148,7 +141,7 @@
           <a data-airport-link="LCY" href="https://www.londoncityairport.com/flight-information" target="_blank" rel="noreferrer">LCY board ↗</a>
         </div>
         <footer class="source-row">
-          <span>Sample access status</span>
+          <span>No inferred delay status</span>
           <a href="https://tfl.gov.uk/plan-a-journey/" target="_blank" rel="noreferrer">Journey Planner ↗</a>
         </footer>
       </article>
@@ -156,27 +149,14 @@
       <article class="card card--events" data-card data-views="now events">
         <header class="card-header">
           <div>
-            <p class="card-kicker">What’s on · sample</p>
-            <h2>Ideas for your day</h2>
+            <p class="card-kicker">What’s on · sources</p>
+            <h2>Browse current listings</h2>
           </div>
           <span class="date-badge" id="selectedDateBadge">Today</span>
         </header>
-        <ol class="event-list">
-          <li>
-            <time>10:00</time>
-            <span><strong>Riverside architecture walk</strong><small>South Bank · illustrative listing</small></span>
-          </li>
-          <li>
-            <time>14:30</time>
-            <span><strong>Independent gallery afternoon</strong><small>Mayfair · illustrative listing</small></span>
-          </li>
-          <li>
-            <time>19:00</time>
-            <span><strong>Small-stage theatre pick</strong><small>Covent Garden · illustrative listing</small></span>
-          </li>
-        </ol>
+        <p class="empty-state">Automated event listings are deliberately withheld until a licensed feed is connected. Time Out remains an outbound discovery source.</p>
         <footer class="source-row">
-          <span>Illustrative listings</span>
+          <span>No scraped listings</span>
           <a href="https://www.timeout.com/london/things-to-do" target="_blank" rel="noreferrer">Browse Time Out ↗</a>
         </footer>
       </article>
@@ -199,14 +179,14 @@
     <section class="phase-note" aria-labelledby="phaseNoteTitle">
       <div>
         <p class="card-kicker">Build status</p>
-        <h2 id="phaseNoteTitle">Phase 0 proves the shell.</h2>
+        <h2 id="phaseNoteTitle">Build 1: TfL is live.</h2>
       </div>
-      <p>It intentionally makes no live API calls. The next phase can connect one source at a time only after layout, embedding and mobile behaviour pass acceptance testing.</p>
+      <p>The Worker fetches and normalises TfL status server-side, caches it briefly and keeps official fallbacks visible. Weather becomes live only in Build 2 after its API key is configured.</p>
     </section>
   </main>
 
   <footer class="site-footer">
-    <span>London Now · Phase 0</span>
+    <span>London Now · Live build 1</span>
     <span>Always confirm journeys with the official operator before travelling.</span>
   </footer>
 
