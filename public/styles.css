@@ -23,6 +23,13 @@
 
 html { scroll-behavior: smooth; }
 
+html.is-google-sites-embed {
+  overscroll-behavior-y: contain;
+  scrollbar-width: none;
+}
+
+html.is-google-sites-embed::-webkit-scrollbar { display: none; }
+
 body {
   margin: 0;
   min-width: 320px;
@@ -202,6 +209,8 @@ h2 {
   background: var(--ink);
   color: var(--white);
 }
+
+.view-tab--mobile-only { display: none; }
 
 .alert-strip {
   display: grid;
@@ -633,11 +642,20 @@ select {
   .header-actions .button--quiet { width: 44px; overflow: hidden; padding-inline: 12px; white-space: nowrap; }
   .header-actions .button--quiet span { margin-right: 20px; }
   .header-actions .button--dark { display: none; }
-  .page-shell { padding-block: 30px 40px; }
+  .page-shell { padding-block: 30px calc(40px + env(safe-area-inset-bottom)); }
   h1 { font-size: 43px; }
   .intro-copy { font-size: 16px; }
+  .controls {
+    position: sticky;
+    z-index: 20;
+    top: 0;
+    margin-inline: -12px;
+    padding-inline: 12px;
+    background: var(--paper);
+  }
   .date-switcher,
   .view-switcher { width: 100%; }
+  .view-tab--mobile-only { display: block; }
   .alert-strip { grid-template-columns: auto 1fr; }
   .alert-strip a { grid-column: 2; }
   .dashboard-grid { gap: 12px; }

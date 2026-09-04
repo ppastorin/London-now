@@ -14,6 +14,7 @@ const required = [
   "tests/airport-access.test.mjs",
   "tests/events.test.mjs",
   "tests/rail.test.mjs",
+  "GOOGLE-SITES-EMBED.html",
   "wrangler.jsonc"
 ];
 
@@ -25,6 +26,7 @@ const headers = await readFile(resolve(root, "public/_headers"), "utf8");
 const wrangler = JSON.parse(await readFile(resolve(root, "wrangler.jsonc"), "utf8"));
 const packageJson = JSON.parse(await readFile(resolve(root, "package.json"), "utf8"));
 const worker = await readFile(resolve(root, "worker/index.js"), "utf8");
+const embed = await readFile(resolve(root, "GOOGLE-SITES-EMBED.html"), "utf8");
 const toolBlock = html.match(/<nav class="tool-links"[\s\S]*?<\/nav>/)?.[0] ?? "";
 const nativeToolUrls = [
   "https://www.londonadvanced.com/home/escape-the-crowds",
@@ -35,6 +37,10 @@ const nativeToolUrls = [
 
 const assertions = [
   [!html.includes('class="demo-banner"') && !html.includes('class="phase-note"'), "redundant status banner and coverage section are absent"],
+  [html.includes('data-mobile-views="flights"') && html.includes('data-mobile-views="events"') && html.includes('data-mobile-views="tools"'), "mobile cards are separated into bounded views"],
+  [html.includes('data-view="tools"') && css.includes(".view-tab--mobile-only") && css.includes("position: sticky"), "mobile Tools tab and sticky controls are present"],
+  [embed.includes("height: 100vh") && embed.includes('scrolling="yes"') && embed.includes("overflow: hidden") && embed.includes("?embed=google-sites"), "Google Sites embed supplies one touch-scrollable dashboard viewport"],
+  [css.includes("is-google-sites-embed") && css.includes("scrollbar-width: none") && css.includes("overscroll-behavior-y: contain"), "embedded document keeps touch scrolling without a duplicate visible scrollbar"],
   [!/>[^<]*\bbuild(?:s|ing)?\b[^<]*</i.test(html), "user-facing build terminology is absent"],
   [!html.match(/18°|Sample alert|illustrative listing/i), "invented operational values are absent"],
   [html.includes('./styles.css'), "stylesheet reference is present"],
@@ -78,7 +84,7 @@ const assertions = [
   [!worker.match(/NATIONAL_RAIL_API_KEY\s*[:=]\s*["'][^"']+["']/), "no National Rail key is committed"],
   [wrangler.kv_namespaces?.some((item) => item.binding === "WEATHER_CACHE" && !item.id), "weather KV is configured for automatic provisioning"],
   [wrangler.triggers?.crons?.includes("7 * * * *"), "hourly weather refresh is configured"],
-  [packageJson.version === "0.5.2", "package version is 0.5.2"],
+  [packageJson.version === "0.5.3", "package version is 0.5.3"],
   [packageJson.devDependencies?.wrangler === "4.129.0", "Wrangler version is pinned"]
 ];
 
@@ -89,4 +95,4 @@ if (failures.length) {
 }
 
 assertions.forEach(([, label]) => console.log(`PASS: ${label}`));
-console.log("London Now v0.5.2 package validation passed.");
+console.log("London Now v0.5.3 package validation passed.");

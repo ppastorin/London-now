@@ -1,6 +1,6 @@
 {
   "name": "london-now",
-  "version": "0.5.2",
+  "version": "0.5.3",
   "private": true,
   "type": "module",
   "description": "London Now with live TfL, Met Office weather, National Rail departures, airport access and Ticketmaster events.",

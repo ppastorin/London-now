@@ -43,17 +43,18 @@
         <button class="view-tab" role="tab" aria-selected="false" data-view="travel" type="button">Travel</button>
         <button class="view-tab" role="tab" aria-selected="false" data-view="flights" type="button">Flights</button>
         <button class="view-tab" role="tab" aria-selected="false" data-view="events" type="button">Events</button>
+        <button class="view-tab view-tab--mobile-only" role="tab" aria-selected="false" data-view="tools" type="button">Tools</button>
       </div>
     </section>
 
-    <section class="alert-strip is-loading" id="tflAlert" data-card data-views="now travel" aria-label="TfL priority status" aria-live="polite">
+    <section class="alert-strip is-loading" id="tflAlert" data-card data-views="now travel" data-mobile-views="now travel" aria-label="TfL priority status" aria-live="polite">
       <span class="alert-label" id="tflAlertLabel">Checking TfL</span>
       <span id="tflAlertText">Loading the latest line status…</span>
       <a href="https://tfl.gov.uk/tube-dlr-overground/status/" target="_blank" rel="noreferrer">Check TfL <span aria-hidden="true">↗</span></a>
     </section>
 
     <div class="dashboard-grid">
-      <article class="card card--weather is-loading" id="weatherCard" data-card data-views="now" aria-live="polite" aria-busy="true">
+      <article class="card card--weather is-loading" id="weatherCard" data-card data-views="now" data-mobile-views="now" aria-live="polite" aria-busy="true">
         <header class="card-header">
           <div>
             <p class="card-kicker" id="weatherKicker">Weather · checking</p>
@@ -79,7 +80,7 @@
         </footer>
       </article>
 
-      <article class="card card--travel" data-card data-views="now travel">
+      <article class="card card--travel" data-card data-views="now travel" data-mobile-views="now travel">
         <header class="card-header">
           <div>
             <p class="card-kicker">Getting around · live</p>
@@ -111,7 +112,7 @@
         </footer>
       </article>
 
-      <article class="card card--airports" data-card data-views="now flights">
+      <article class="card card--airports" data-card data-views="now flights" data-mobile-views="flights">
         <header class="card-header">
           <div>
             <p class="card-kicker">Getting to airports · live access</p>
@@ -138,7 +139,7 @@
         </footer>
       </article>
 
-      <article class="card card--events is-loading" id="eventsCard" data-card data-views="now events" aria-live="polite" aria-busy="true">
+      <article class="card card--events is-loading" id="eventsCard" data-card data-views="now events" data-mobile-views="events" aria-live="polite" aria-busy="true">
         <header class="card-header">
           <div>
             <p class="card-kicker" id="eventsKicker">What’s on · checking</p>
@@ -165,7 +166,7 @@
         </footer>
       </article>
 
-      <article class="card card--tools" data-card data-views="now travel">
+      <article class="card card--tools" data-card data-views="now travel tools" data-mobile-views="tools">
         <header class="card-header">
           <div>
             <p class="card-kicker">London Advanced</p>

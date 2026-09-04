@@ -1,4 +1,4 @@
-# London Now v0.5.2 validation
+# London Now v0.5.3 validation
 
 ## RDM subscription
 
@@ -23,7 +23,7 @@
 
 ## API checks
 
-- [ ] `/api/health` returns HTTP 200 and version `0.5.2`.
+- [ ] `/api/health` returns HTTP 200 and version `0.5.3`.
 - [ ] Health reports rail `ready` and airport access `live-access`.
 - [ ] `/api/rail?station=WAT` returns HTTP 200 and a `services` array.
 - [ ] `/api/weather` returns HTTP 200 with `stale: false` and `refreshFailed: false`.
@@ -49,12 +49,15 @@
 - [ ] Event date/category and weather date selection still work.
 - [ ] All four London Advanced tool links remain in one block.
 - [ ] Airport and station preferences persist after refresh.
-- [ ] Google Sites uses the existing embed code and URL.
+- [ ] Google Sites uses the replacement code in `GOOGLE-SITES-EMBED.html`.
 - [ ] The redundant Live data banner and Live coverage section are absent.
 - [ ] The London Now brand header and safety footer remain.
 - [ ] Desktop weather uses roughly one-third of the row and TfL two-thirds.
 - [ ] The weather card ends after its content instead of stretching to match long TfL alerts.
 - [ ] The weather icon matches sunny, cloudy, rain, snow, fog, thunder and night conditions.
+- [ ] On mobile, Now contains weather and transport but does not stack airports, events and tools below them.
+- [ ] Flights, Events and Tools each expose the corresponding section from the sticky mobile controls.
+- [ ] Selecting a mobile tab returns to the beginning of that selected view.
 - [ ] Test 320, 390, 768 and 1280-pixel widths.
 - [ ] There is no horizontal scrollbar and only one usable vertical scroll path.
 
@@ -62,4 +65,4 @@
 
 - [ ] GitHub `main` triggered a successful Cloudflare deployment.
 - [ ] Production API, homepage and published Google Sites checks passed.
-- [ ] Approved commit is tagged `v0.5.2-weather-refresh-approved`.
+- [ ] Approved commit is tagged `v0.5.3-mobile-scroll-approved`.

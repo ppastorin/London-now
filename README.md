@@ -1,6 +1,8 @@
-# London Now — v0.5.2 weather refresh
+# London Now — v0.5.3 mobile embed fix
 
-This release removes the redundant **Live data** banner and **Live coverage** section. It also makes weather refresh self-healing: when the stored forecast is 70 minutes old, a dashboard request obtains a fresh Met Office forecast instead of relying only on Cloudflare's hourly scheduled event.
+This release prevents Google Sites from cutting off the dashboard on mobile. The desktop dashboard is unchanged. On screens up to 640 pixels, **Now** contains only weather and current transport, while **Flights**, **Events** and the new **Tools** tab expose the other sections without creating one extremely tall document. The controls remain available while scrolling.
+
+The package also contains `GOOGLE-SITES-EMBED.html`. Its code gives the embedded dashboard one touch-scrollable viewport and does not require manual dragging or height adjustment in Google Sites.
 
 It does not use the Darwin push feed and does not claim to show flight status. National Rail data is used only for train departures and airport access.
 
@@ -76,10 +78,10 @@ This release may be committed directly to `main`, matching the workflow used for
 6. Commit with:
 
    ```text
-   Remove status sections and harden weather refresh
+   Fix mobile Google Sites navigation
    ```
 
-Do not upload the ZIP itself or create an enclosing `london-now-v0.5.2-weather-refresh/` directory in the repository.
+Do not upload the ZIP itself or create an enclosing `london-now-v0.5.3-mobile-scroll/` directory in the repository.
 
 ## 5. Cloudflare build
 
@@ -91,7 +93,15 @@ No build setting changes are required. Retain:
 | Build command | `npm run check` |
 | Deploy command | `npm run deploy` |
 
-The existing Worker URL and Google Sites embed remain unchanged.
+The existing Worker URL remains unchanged. After deployment, replace the current Google Sites embed with the code from `GOOGLE-SITES-EMBED.html`.
+
+### Replace the Google Sites block
+
+1. Open the London dashboard page in Google Sites edit mode.
+2. Select the existing dashboard embed and delete that block.
+3. Choose **Insert → Embed → Embed code**.
+4. Copy the complete contents of `GOOGLE-SITES-EMBED.html`, paste it into the box, then choose **Next → Insert**.
+5. Do not drag or resize the inserted block. Publish the site and test the published page on the phone; the editor preview is not a reliable mobile test.
 
 ## 6. Production API validation
 
@@ -104,7 +114,7 @@ https://london-now.ppastorin.workers.dev/api/airport-access
 https://london-now.ppastorin.workers.dev/
 ```
 
-Health must return HTTP 200, version `0.5.2`, `integrations.rail: "ready"` and `integrations.airportAccess: "live-access"`.
+Health must return HTTP 200, version `0.5.3`, `integrations.rail: "ready"` and `integrations.airportAccess: "live-access"`.
 
 The weather response must return HTTP 200 with `stale: false`, `refreshFailed: false` and a reasonably recent `fetchedAt`. Immediately after deployment, an earlier edge-cached response can remain visible for up to five minutes; wait or hard-refresh before diagnosing it as stale.
 
@@ -129,13 +139,15 @@ VIC and PAD should return HTTP 200. XYZ must return HTTP 400. Repeating the same
 3. Confirm cancelled and materially delayed trains are highlighted, while missing values are not interpreted as on time.
 4. Check Heathrow, Gatwick, Luton and Stansted route rows. They should no longer say that RDM access is pending.
 5. Confirm all five official airport departure-board links still work.
-6. Test the existing Google Sites embed at 320, 390, 768 and 1280-pixel widths.
-7. Confirm there is one usable vertical scroll path and no horizontal scrollbar.
+6. On mobile, confirm **Now** shows weather and transport, **Flights** shows airport access, **Events** shows Ticketmaster results, and **Tools** shows the four London Advanced links.
+7. Confirm the controls remain reachable while scrolling and switching tabs returns to the top of the selected section.
+8. Test the replacement Google Sites embed at 320, 390, 768 and 1280-pixel widths.
+9. Confirm every section can be reached, there is no horizontal scrollbar, and the app is not clipped at the bottom.
 
 After production passes, tag the approved commit:
 
 ```text
-v0.5.2-weather-refresh-approved
+v0.5.3-mobile-scroll-approved
 ```
 
 ## Rollback

@@ -1,6 +1,10 @@
 (() => {
   "use strict";
 
+  if (new URLSearchParams(window.location.search).get("embed") === "google-sites") {
+    document.documentElement.classList.add("is-google-sites-embed");
+  }
+
   const STORAGE_KEY = "london-now-phase0-preferences";
   const DEFAULTS = {
     airports: ["LHR", "LGW", "STN"],
@@ -23,6 +27,7 @@
   const selectedDateBadge = document.querySelector("#selectedDateBadge");
   const viewTabs = [...document.querySelectorAll(".view-tab")];
   const cards = [...document.querySelectorAll("[data-card]")];
+  const mobileLayout = window.matchMedia("(max-width: 640px)");
 
   let activeView = "now";
   let preferences = readPreferences();
@@ -461,9 +466,22 @@
 
   function applyView() {
     cards.forEach((card) => {
-      const views = (card.dataset.views || "").split(" ");
+      const viewSource = mobileLayout.matches ? card.dataset.mobileViews : card.dataset.views;
+      const views = (viewSource || card.dataset.views || "").split(" ");
       card.classList.toggle("is-hidden", !views.includes(activeView));
     });
+  }
+
+  function handleLayoutChange() {
+    if (!mobileLayout.matches && activeView === "tools") {
+      activeView = "now";
+      viewTabs.forEach((item) => {
+        const selected = item.dataset.view === activeView;
+        item.classList.toggle("is-active", selected);
+        item.setAttribute("aria-selected", selected ? "true" : "false");
+      });
+    }
+    applyView();
   }
 
   function syncForm() {
@@ -530,8 +548,16 @@
         item.setAttribute("aria-selected", selected ? "true" : "false");
       });
       applyView();
+      if (mobileLayout.matches) {
+        window.requestAnimationFrame(() => {
+          document.querySelector(".controls").scrollIntoView({ block: "start" });
+        });
+      }
     });
   });
+
+  if (typeof mobileLayout.addEventListener === "function") mobileLayout.addEventListener("change", handleLayoutChange);
+  else mobileLayout.addListener(handleLayoutChange);
 
   document.querySelector("#fullScreenLink").href = window.location.href;
   document.querySelector("#eventCategory").addEventListener("change", loadEvents);

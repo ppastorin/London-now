@@ -1,5 +1,12 @@
 # Changelog
 
+## 0.5.3 — 4 September 2026
+
+- Prevented the Google Sites mobile embed from hiding content below its fixed container height.
+- Split the mobile dashboard into bounded Now, Travel, Flights, Events and Tools views while preserving the complete desktop Now view.
+- Made mobile controls sticky and returned the viewport to the beginning of a newly selected view.
+- Added a replacement Google Sites embed that provides a touch-scrollable viewport without manual resizing.
+
 ## 0.5.2 — 4 September 2026
 
 - Removed the redundant Live data banner and Live coverage section.
