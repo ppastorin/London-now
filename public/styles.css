@@ -115,19 +115,6 @@ button, a { -webkit-tap-highlight-color: transparent; }
 .button:hover,
 .inline-control:hover { transform: translateY(-1px); }
 
-.demo-banner {
-  display: flex;
-  justify-content: center;
-  gap: 8px 16px;
-  padding: 10px 20px;
-  background: var(--ink);
-  color: var(--white);
-  font-size: 14px;
-  text-align: center;
-}
-
-.demo-banner strong { color: #ffd8d3; }
-
 .page-shell { padding-block: 46px 56px; }
 
 .intro {
@@ -530,18 +517,6 @@ h2 {
 
 .tool-links a:hover span:first-child { text-decoration: underline; text-underline-offset: 4px; }
 
-.phase-note {
-  display: grid;
-  grid-template-columns: 0.7fr 1.3fr;
-  gap: 30px;
-  margin-top: 34px;
-  padding: 28px;
-  border-top: 1px solid var(--line);
-  border-bottom: 1px solid var(--line);
-}
-
-.phase-note p:last-child { margin: 0; color: var(--muted); }
-
 .site-footer {
   display: flex;
   justify-content: space-between;
@@ -647,7 +622,6 @@ select {
   .card--weather,
   .card--travel,
   .card--airports { grid-column: span 6; }
-  .phase-note { grid-template-columns: 1fr; gap: 15px; }
 }
 
 @media (max-width: 640px) {
@@ -659,8 +633,6 @@ select {
   .header-actions .button--quiet { width: 44px; overflow: hidden; padding-inline: 12px; white-space: nowrap; }
   .header-actions .button--quiet span { margin-right: 20px; }
   .header-actions .button--dark { display: none; }
-  .demo-banner { display: block; text-align: left; }
-  .demo-banner strong { display: block; }
   .page-shell { padding-block: 30px 40px; }
   h1 { font-size: 43px; }
   .intro-copy { font-size: 16px; }

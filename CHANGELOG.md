@@ -1,5 +1,12 @@
 # Changelog
 
+## 0.5.2 — 4 September 2026
+
+- Removed the redundant Live data banner and Live coverage section.
+- Added request-time recovery so a forecast older than 70 minutes is refreshed without depending solely on the hourly scheduled event.
+- Retained the last valid forecast when an upstream refresh fails and exposed that state through `refreshFailed` and `stale`.
+- Relabelled the weather card as the latest forecast, reserving **Refresh delayed** for a failed refresh.
+
 ## 0.5.1 — 4 September 2026
 
 - Removed user-facing release-stage labels from the status banner, coverage note and footer.

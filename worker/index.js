@@ -5,6 +5,7 @@ const NATIONAL_RAIL_DEPARTURES_URL = "https://api1.raildata.org.uk/1010-live-dep
 const WEATHER_CACHE_KEY = "metoffice:global-spot:london:daily:v1";
 const TFL_CACHE_SECONDS = 75;
 const RAIL_CACHE_SECONDS = 75;
+const WEATHER_REFRESH_AFTER_MS = 70 * 60 * 1000;
 const WEATHER_STALE_AFTER_MS = 2 * 60 * 60 * 1000;
 const EVENTS_CACHE_SECONDS = 6 * 60 * 60;
 
@@ -53,7 +54,7 @@ export default {
       const configured = weatherState === "ready" && eventsState === "ready" && railState === "ready";
       return json({
         status: configured ? "ok" : "configuration-required",
-        version: "0.5.1",
+        version: "0.5.2",
         integrations: {
           tfl: "live",
           weather: weatherState,
@@ -241,7 +242,7 @@ async function getRailBoardResponse(request, env, context, options) {
     headers: {
       accept: "application/json",
       "x-apikey": env.NATIONAL_RAIL_API_KEY,
-      "user-agent": "LondonNow/0.5.1 (+https://www.londonadvanced.com/)"
+      "user-agent": "LondonNow/0.5.2 (+https://www.londonadvanced.com/)"
     },
     signal: AbortSignal.timeout(10000)
   });
@@ -317,20 +318,33 @@ async function handleWeather(env) {
 
   try {
     let forecast = await env.WEATHER_CACHE.get(WEATHER_CACHE_KEY, "json");
+    const hadCachedForecast = Boolean(forecast);
     let cacheStatus = "HIT";
-    if (!forecast) {
-      forecast = await refreshWeather(env);
-      cacheStatus = "MISS";
+    let refreshFailed = false;
+    if (shouldRefreshWeather(forecast)) {
+      try {
+        forecast = await refreshWeather(env);
+        cacheStatus = hadCachedForecast ? "REFRESH" : "MISS";
+      } catch (error) {
+        if (!forecast) throw error;
+        refreshFailed = true;
+        cacheStatus = "STALE";
+      }
     }
 
-    forecast.stale = Date.now() - Date.parse(forecast.fetchedAt) > WEATHER_STALE_AFTER_MS;
-    return json(forecast, 200, {
+    const stale = refreshFailed || Date.now() - Date.parse(forecast.fetchedAt) > WEATHER_STALE_AFTER_MS;
+    return json({ ...forecast, stale, refreshFailed }, 200, {
       "cache-control": "public, max-age=300, s-maxage=300",
       "x-cache": cacheStatus
     });
   } catch (error) {
     return upstreamError("Weather forecast is temporarily unavailable", error, "Met Office Weather DataHub", "https://weather.metoffice.gov.uk/forecast/gcpvj0v07");
   }
+}
+
+export function shouldRefreshWeather(forecast, now = Date.now()) {
+  const fetchedAt = Date.parse(forecast?.fetchedAt || "");
+  return !Number.isFinite(fetchedAt) || now - fetchedAt >= WEATHER_REFRESH_AFTER_MS;
 }
 
 async function refreshWeather(env) {

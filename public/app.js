@@ -69,7 +69,7 @@
       timeZone: "Europe/London"
     });
     const max = formatMetric(day.maxC, "°");
-    document.querySelector("#weatherKicker").textContent = weatherForecast.stale ? "Weather · update delayed" : "Weather · live forecast";
+    document.querySelector("#weatherKicker").textContent = weatherForecast.stale ? "Weather · refresh delayed" : "Weather · latest forecast";
     document.querySelector("#weatherTitle").textContent = `${weatherForecast.location} · ${readableDate}`;
     document.querySelector("#weatherTemp").textContent = max;
     document.querySelector("#weatherTemp").setAttribute("aria-label", `Forecast high ${max}`);
@@ -80,8 +80,8 @@
     document.querySelector("#weatherRain").textContent = formatMetric(day.rainProbability, "%");
     document.querySelector("#weatherWind").textContent = formatMetric(day.windMph, " mph");
     document.querySelector("#weatherFreshness").textContent = weatherForecast.stale
-      ? `Update delayed · last fetched ${formatTime(weatherForecast.fetchedAt)}`
-      : `Met Office fetched ${formatTime(weatherForecast.fetchedAt)}`;
+      ? `Refresh delayed · forecast fetched ${formatTime(weatherForecast.fetchedAt)}`
+      : `Forecast fetched ${formatTime(weatherForecast.fetchedAt)}`;
   }
 
   function formatMetric(value, suffix) {

@@ -1,4 +1,4 @@
-# London Now v0.5.1 validation
+# London Now v0.5.2 validation
 
 ## RDM subscription
 
@@ -23,9 +23,11 @@
 
 ## API checks
 
-- [ ] `/api/health` returns HTTP 200 and version `0.5.1`.
+- [ ] `/api/health` returns HTTP 200 and version `0.5.2`.
 - [ ] Health reports rail `ready` and airport access `live-access`.
 - [ ] `/api/rail?station=WAT` returns HTTP 200 and a `services` array.
+- [ ] `/api/weather` returns HTTP 200 with `stale: false` and `refreshFailed: false`.
+- [ ] `/api/weather` has a reasonably recent `fetchedAt`; allow up to five minutes for an old edge-cached response to expire after deployment.
 - [ ] WAT, VIC, PAD, LST, LBG, KGX and EUS are accepted.
 - [ ] An unsupported CRS code returns HTTP 400.
 - [ ] The response contains no RDM credential.
@@ -48,7 +50,8 @@
 - [ ] All four London Advanced tool links remain in one block.
 - [ ] Airport and station preferences persist after refresh.
 - [ ] Google Sites uses the existing embed code and URL.
-- [ ] No user-facing header, coverage or footer text mentions a software build.
+- [ ] The redundant Live data banner and Live coverage section are absent.
+- [ ] The London Now brand header and safety footer remain.
 - [ ] Desktop weather uses roughly one-third of the row and TfL two-thirds.
 - [ ] The weather card ends after its content instead of stretching to match long TfL alerts.
 - [ ] The weather icon matches sunny, cloudy, rain, snow, fog, thunder and night conditions.
@@ -59,4 +62,4 @@
 
 - [ ] GitHub `main` triggered a successful Cloudflare deployment.
 - [ ] Production API, homepage and published Google Sites checks passed.
-- [ ] Approved commit is tagged `v0.5.1-layout-approved`.
+- [ ] Approved commit is tagged `v0.5.2-weather-refresh-approved`.

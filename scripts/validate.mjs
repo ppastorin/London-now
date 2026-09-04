@@ -34,7 +34,7 @@ const nativeToolUrls = [
 ];
 
 const assertions = [
-  [html.includes("Live data") && html.includes("National Rail departures"), "live-data scope notice is present"],
+  [!html.includes('class="demo-banner"') && !html.includes('class="phase-note"'), "redundant status banner and coverage section are absent"],
   [!/>[^<]*\bbuild(?:s|ing)?\b[^<]*</i.test(html), "user-facing build terminology is absent"],
   [!html.match(/18°|Sample alert|illustrative listing/i), "invented operational values are absent"],
   [html.includes('./styles.css'), "stylesheet reference is present"],
@@ -51,6 +51,7 @@ const assertions = [
   [wrangler.assets?.run_worker_first?.includes("/api/*"), "API routes run through the Worker"],
   [worker.includes("api.tfl.gov.uk") && worker.includes("/api/tfl"), "TfL adapter and endpoint are present"],
   [worker.includes("data.hub.api.metoffice.gov.uk") && worker.includes("/api/weather"), "Met Office adapter and endpoint are present"],
+  [worker.includes("WEATHER_REFRESH_AFTER_MS") && worker.includes("shouldRefreshWeather") && worker.includes('cacheStatus = "STALE"'), "weather cache has request-time recovery and stale fallback"],
   [worker.includes("/api/airport-access") && worker.includes("normalizeAirportAccess"), "airport-access endpoint and normalizer are present"],
   [worker.includes("app.ticketmaster.com/discovery/v2/events.json") && worker.includes("/api/events") && worker.includes("normalizeTicketmaster"), "Ticketmaster adapter, endpoint and normalizer are present"],
   [worker.includes("api1.raildata.org.uk/1010-live-departure-board-dep1_2") && worker.includes("/api/rail") && worker.includes("normalizeRailBoard"), "National Rail adapter, endpoint and normalizer are present"],
@@ -61,7 +62,7 @@ const assertions = [
   [html.includes('id="eventCategory"') && html.includes('value="music"') && html.includes('value="arts"') && html.includes('value="sports"') && html.includes('value="family"'), "event category selector is present"],
   [html.includes('id="eventList"') && html.includes('id="eventsFreshness"'), "live event result and freshness regions are present"],
   [html.includes("https://www.ticketmaster.co.uk/discover/london") && !html.includes("www.timeout.com"), "Ticketmaster replaces the former Time Out event link"],
-  [html.includes("Rail services from central London") && html.includes("authoritative source for flight departures"), "rail-access and flight-board scopes are separated"],
+  [worker.includes("Public-transport access only; not flight operations"), "rail-access and flight-board scopes are separated"],
   [html.includes("https://www.heathrow.com/departures") && html.includes("https://www.london-luton.co.uk/departures") && html.includes("https://www.stanstedairport.com/departures/"), "departure-specific airport links are present"],
   [html.includes("https://www.gatwickairport.com/flights") && html.includes("https://www.londoncityairport.com/flight-info/departures-arrivals"), "official combined airport boards are present"],
   [(html.match(/departures ↗/g) || []).length === 5, "all five airport links are labelled as departures"],
@@ -77,7 +78,7 @@ const assertions = [
   [!worker.match(/NATIONAL_RAIL_API_KEY\s*[:=]\s*["'][^"']+["']/), "no National Rail key is committed"],
   [wrangler.kv_namespaces?.some((item) => item.binding === "WEATHER_CACHE" && !item.id), "weather KV is configured for automatic provisioning"],
   [wrangler.triggers?.crons?.includes("7 * * * *"), "hourly weather refresh is configured"],
-  [packageJson.version === "0.5.1", "package version is 0.5.1"],
+  [packageJson.version === "0.5.2", "package version is 0.5.2"],
   [packageJson.devDependencies?.wrangler === "4.129.0", "Wrangler version is pinned"]
 ];
 
@@ -88,4 +89,4 @@ if (failures.length) {
 }
 
 assertions.forEach(([, label]) => console.log(`PASS: ${label}`));
-console.log("London Now v0.5.1 package validation passed.");
+console.log("London Now v0.5.2 package validation passed.");

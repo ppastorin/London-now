@@ -1,8 +1,19 @@
-# London Now — v0.5.1 layout refinement
+# London Now — v0.5.2 weather refresh
 
-This release retains the approved Rail Delivery Group **Live Departure Board** integration and refines the dashboard presentation. The desktop weather card is narrower and content-height, the TfL card has more room for disruption details, and the weather condition is represented by an icon. User-facing release-stage labels have been removed.
+This release removes the redundant **Live data** banner and **Live coverage** section. It also makes weather refresh self-healing: when the stored forecast is 70 minutes old, a dashboard request obtains a fresh Met Office forecast instead of relying only on Cloudflare's hourly scheduled event.
 
 It does not use the Darwin push feed and does not claim to show flight status. National Rail data is used only for train departures and airport access.
+
+## Weather freshness
+
+The Met Office Global Spot response is a forecast, not a second-by-second observation. London Now stores the last successful response in Cloudflare KV to avoid unnecessary calls against the free allowance.
+
+- A forecast less than 70 minutes old is served immediately.
+- At 70 minutes, the next dashboard request refreshes it from the Met Office before responding.
+- The hourly Cloudflare trigger remains as an additional background refresh.
+- If the Met Office request fails, the last valid forecast remains visible and is labelled **Refresh delayed** rather than leaving the card blank.
+
+The first request after the 70-minute threshold may therefore be slightly slower. A normal response exposes `stale: false` and `refreshFailed: false`; neither the API key nor the upstream payload is exposed.
 
 ## 1. Subscribe to the correct RDM product
 
@@ -65,10 +76,10 @@ This release may be committed directly to `main`, matching the workflow used for
 6. Commit with:
 
    ```text
-   Add live National Rail departures
+   Remove status sections and harden weather refresh
    ```
 
-Do not upload the ZIP itself or create an enclosing `london-now-v0.5.1-layout-polish/` directory in the repository.
+Do not upload the ZIP itself or create an enclosing `london-now-v0.5.2-weather-refresh/` directory in the repository.
 
 ## 5. Cloudflare build
 
@@ -93,7 +104,9 @@ https://london-now.ppastorin.workers.dev/api/airport-access
 https://london-now.ppastorin.workers.dev/
 ```
 
-Health must return HTTP 200, version `0.5.1`, `integrations.rail: "ready"` and `integrations.airportAccess: "live-access"`.
+Health must return HTTP 200, version `0.5.2`, `integrations.rail: "ready"` and `integrations.airportAccess: "live-access"`.
+
+The weather response must return HTTP 200 with `stale: false`, `refreshFailed: false` and a reasonably recent `fetchedAt`. Immediately after deployment, an earlier edge-cached response can remain visible for up to five minutes; wait or hard-refresh before diagnosing it as stale.
 
 The rail response must return HTTP 200 with `provider: "National Rail Live Departure Board"`, station code `WAT`, a `services` array, a current `checkedAt`, and no credential.
 
@@ -122,7 +135,7 @@ VIC and PAD should return HTTP 200. XYZ must return HTTP 400. Repeating the same
 After production passes, tag the approved commit:
 
 ```text
-v0.5.1-layout-approved
+v0.5.2-weather-refresh-approved
 ```
 
 ## Rollback
