@@ -11,6 +11,7 @@ const required = [
   "worker/index.js",
   "tests/tfl.test.mjs",
   "tests/weather.test.mjs",
+  "tests/air-quality.test.mjs",
   "tests/airport-access.test.mjs",
   "tests/events.test.mjs",
   "tests/rail.test.mjs",
@@ -64,6 +65,13 @@ const assertions = [
   [worker.includes("TFL_FALLBACK_MAX_AGE_MS = 5 * 60 * 1000") && worker.includes("isUsableTflSnapshot") && worker.includes('"x-cache": "STALE"'), "TfL has a bounded last-confirmed fallback"],
   [css.includes(".alert-strip--stale") && worker.includes("TFL_LAST_GOOD_KEY") && (await readFile(resolve(root, "public/app.js"), "utf8")).includes("TfL last confirmed"), "TfL delayed-refresh state is visible in the interface"],
   [worker.includes("data.hub.api.metoffice.gov.uk") && worker.includes("/api/weather"), "Met Office adapter and endpoint are present"],
+  [worker.includes("api.erg.ic.ac.uk/AirQuality/Hourly/MonitoringIndex/GroupName=London/Json") && worker.includes("/api/air-quality"), "official LAQN hourly index adapter and endpoint are present"],
+  [worker.includes("normalizeAirQuality") && worker.includes("shouldRefreshAirQuality") && worker.includes("AIR_QUALITY_CACHE_KEY"), "LAQN normalization and KV-backed provider-TTL refresh are present"],
+  [worker.includes('airQuality: env.WEATHER_CACHE ? "ready" : "missing-kv"'), "health endpoint reports air-quality readiness"],
+  [html.includes('id="airQualityPanel"') && html.includes('id="airQualityIndex"') && html.includes('id="airQualityMarker"'), "compact air-quality module is integrated into the weather card"],
+  [html.includes("LAQN / Imperial ↗") && html.includes("OGL v2.0 ↗"), "LAQN provider and licence attribution are visible"],
+  [css.includes(".air-quality__scale") && css.includes(".air-quality__index--very-high") && css.includes(".air-quality__source"), "air-quality scale, bands and responsive source treatment are styled"],
+  [(await readFile(resolve(root, "public/app.js"), "utf8")).includes("London network peak") && (await readFile(resolve(root, "public/app.js"), "utf8")).includes("loadAirQuality"), "client renders the network scope and live air-quality state"],
   [worker.includes("WEATHER_REFRESH_AFTER_MS") && worker.includes("shouldRefreshWeather") && worker.includes('cacheStatus = "STALE"'), "weather cache has request-time recovery and stale fallback"],
   [worker.includes("/api/airport-access") && worker.includes("normalizeAirportAccess"), "airport-access endpoint and normalizer are present"],
   [worker.includes("app.ticketmaster.com/discovery/v2/events.json") && worker.includes("/api/events") && worker.includes("normalizeTicketmaster"), "Ticketmaster adapter, endpoint and normalizer are present"],
@@ -92,7 +100,7 @@ const assertions = [
   [!worker.match(/NATIONAL_RAIL_API_KEY\s*[:=]\s*["'][^"']+["']/), "no National Rail key is committed"],
   [wrangler.kv_namespaces?.some((item) => item.binding === "WEATHER_CACHE" && !item.id), "weather KV is configured for automatic provisioning"],
   [wrangler.triggers?.crons?.includes("7 * * * *"), "hourly weather refresh is configured"],
-  [packageJson.version === "0.5.5", "package version is 0.5.5"],
+  [packageJson.version === "0.6.0", "package version is 0.6.0"],
   [packageJson.devDependencies?.wrangler === "4.129.0", "Wrangler version is pinned"]
 ];
 
@@ -103,4 +111,4 @@ if (failures.length) {
 }
 
 assertions.forEach(([, label]) => console.log(`PASS: ${label}`));
-console.log("London Now v0.5.5 package validation passed.");
+console.log("London Now v0.6.0 package validation passed.");

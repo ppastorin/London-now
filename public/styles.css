@@ -335,6 +335,75 @@ h2 {
 
 .metric-row strong { display: block; color: var(--ink); }
 
+.air-quality {
+  margin: 24px 0;
+  padding: 16px;
+  background: rgba(255, 255, 255, 0.78);
+  border: 1px solid var(--line);
+  border-radius: 14px;
+}
+
+.air-quality__heading {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 14px;
+}
+
+.air-quality__kicker {
+  margin: 0 0 3px;
+  color: var(--muted);
+  font-size: 12px;
+  font-weight: 800;
+  letter-spacing: 0.1em;
+  text-transform: uppercase;
+}
+
+.air-quality h3 { margin: 0; font-size: 19px; line-height: 1.2; }
+
+.air-quality__index {
+  flex: 0 0 auto;
+  min-width: 58px;
+  padding: 5px 9px;
+  border-radius: 999px;
+  color: var(--white);
+  font-size: 21px;
+  font-weight: 850;
+  line-height: 1;
+  text-align: center;
+}
+
+.air-quality__index small { font-size: 11px; font-weight: 750; }
+.air-quality__index--low { background: var(--green); }
+.air-quality__index--moderate { background: var(--amber); }
+.air-quality__index--high { background: var(--red); }
+.air-quality__index--very-high { background: #6e245e; }
+.air-quality__index--pending { background: var(--muted); }
+
+.air-quality__scale {
+  position: relative;
+  height: 8px;
+  margin: 14px 5px 12px;
+  background: linear-gradient(90deg, var(--green) 0 30%, #d6a21f 30% 60%, var(--red) 60% 90%, #6e245e 90% 100%);
+  border-radius: 999px;
+}
+
+.air-quality__scale span {
+  position: absolute;
+  top: 50%;
+  width: 16px;
+  height: 16px;
+  transform: translate(-50%, -50%);
+  background: var(--white);
+  border: 3px solid var(--ink);
+  border-radius: 50%;
+}
+
+.air-quality__summary { margin: 0 0 12px; color: var(--muted); font-size: 14px; }
+.air-quality__source { display: flex; justify-content: space-between; gap: 10px; color: var(--muted); font-size: 12px; }
+.air-quality__source a { color: var(--ink); font-weight: 750; text-underline-offset: 3px; }
+.air-quality--error { border-style: dashed; }
+
 .source-row {
   display: flex;
   align-items: center;
@@ -746,6 +815,8 @@ select {
   .tool-links { grid-template-columns: 1fr; }
   .tool-link { min-height: 94px; }
   .metric-row span { padding: 9px 5px; font-size: 13px; }
+  .air-quality { margin-block: 18px; padding: 14px; }
+  .air-quality__source { align-items: flex-start; flex-direction: column; }
   .source-row { align-items: flex-start; flex-direction: column; }
   .source-links { align-items: flex-start; flex-wrap: wrap; }
   .site-footer { flex-direction: column; }

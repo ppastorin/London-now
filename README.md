@@ -1,90 +1,143 @@
-# London Now — v0.5.5 TfL resilience
+# London Now — v0.6.0 live air quality
 
-This release fixes the TfL HTTP 429 issue caused when the Cloudflare secret is named `TFL_API_KEY`. Earlier releases read only `TFL_APP_KEY`; v0.5.5 prefers `TFL_API_KEY` and continues to accept the legacy name.
+This release adds live air quality from the London Air Quality Network (LAQN) to the existing weather card. It uses the official hourly London monitoring-index JSON feed and shows the highest current UK Daily Air Quality Index reported across participating London monitoring sites.
 
-It also adds one controlled retry for transient TfL failures and, after at least one successful request, shows a last-confirmed status for up to five minutes instead of immediately replacing the dashboard with an error. The API marks that response with `stale: true`, `degraded: true` and `x-cache: STALE`.
+The result is deliberately labelled **London network peak**. It is a conservative city-wide signal, not a claim about the air on every street.
 
-## 1. Confirm the TfL product and key
+## Source, account and licence
 
-1. Sign in at <https://api-portal.tfl.gov.uk/>.
-2. Confirm that your application is subscribed to the free **500 requests per minute** product, rather than relying on anonymous access.
-3. Copy the application's API key. Do not paste it into GitHub or this package.
+No account, registration or API key is required for the LAQN API.
 
-## 2. Store the preferred Cloudflare secret
+Use is subject to the Open Government Licence v2.0. The interface includes links to LAQN / Imperial College London and the licence. The API documentation also asks developers to tell the Environmental Research Group about applications using the feed and recommends using a server proxy with appropriate caching.
 
-1. Open **Cloudflare → Workers & Pages → london-now**.
-2. Open **Settings → Variables and Secrets**.
-3. Add or edit an encrypted **Secret** named exactly:
+Before or shortly after publishing, use the [LondonAir contact page](https://www.londonair.org.uk/london/asp/contact.asp) to provide:
+
+- application name: **London Now / London Advanced**;
+- public URL: `https://london-now.ppastorin.workers.dev/`;
+- feed: hourly monitoring index for group `London`;
+- usage: a public London visitor dashboard;
+- controls: requests are proxied through Cloudflare and cached using the feed's `TimeToLive` value.
+
+This is notification, not an account application. Do not create or store a fictitious LAQN secret.
+
+## UI decision
+
+Three placements were assessed:
+
+| Option | Benefit | Cost | Decision |
+|---|---|---|---|
+| Separate card | Most visible | Longer mobile page and awkward desktop grid | Rejected |
+| Global alert strip | Strong when pollution is elevated | Feature disappears on normal days | Retain as a possible later enhancement |
+| Weather-card module | Keeps environmental conditions together and fills existing space | Less visually dominant | Implemented |
+
+The implemented module includes the 1–10 index, official band, peak pollutant, reporting-site count, bulletin time, source and licence. It creates no new mobile tab and preserves the bounded Google Sites layout.
+
+## Integration design
+
+```text
+Browser / Google Sites
+        ↓
+Cloudflare Worker /api/air-quality
+        ↓
+Existing WEATHER_CACHE KV binding
+        ↓
+Official LAQN hourly London JSON feed
+```
+
+The upstream response is normalized server-side. Visitors never download the large source payload. The Worker uses LAQN's supplied validity period, refreshes when needed, and retains the most recent result if a temporary refresh fails. Data more than two hours old is labelled stale.
+
+## Deploy to the existing application
+
+No new GitHub repository, Cloudflare Worker, KV namespace, variable or secret is required.
+
+1. Extract the release ZIP.
+2. Open the existing `london-now` GitHub repository.
+3. Select branch `main`.
+4. Choose **Add file → Upload files**.
+5. Upload the contents inside `london-now-v0.6.0-air-quality` to the repository root.
+6. Confirm the repository root still contains `public/`, `worker/`, `tests/`, `package.json` and `wrangler.jsonc`.
+7. Commit with:
 
    ```text
-   TFL_API_KEY
+   Add live LAQN air quality
    ```
 
-4. Paste the TfL API key and save it.
-5. If `TFL_APP_KEY` already exists, it may remain temporarily. `TFL_API_KEY` takes precedence. Once production reports registered access, the old secret can be removed.
+Do not upload the ZIP or create an extra enclosing directory.
 
-Retain `METOFFICE_API_KEY`, `NATIONAL_RAIL_API_KEY`, `TICKETMASTER_API_KEY`, the existing `WEATHER_CACHE` binding and the hourly trigger. The existing KV binding is also used for the short-lived last-confirmed TfL snapshot; no new resource is required.
+## Cloudflare
 
-## 3. Update the existing repository
+Retain the existing settings:
 
-This release can be committed directly to `main`.
+| Setting | Value |
+|---|---|
+| Worker | `london-now` |
+| Production branch | `main` |
+| Root directory | `/` |
+| Build command | `npm run check` |
+| Deploy command | `npm run deploy` |
 
-1. Extract the ZIP.
-2. Open the existing `london-now` GitHub repository and select `main`.
-3. Choose **Add file → Upload files**.
-4. Upload the contents inside the extracted folder to the repository root.
-5. Confirm that `public/`, `worker/`, `tests/`, `package.json` and `wrangler.jsonc` remain at the root.
-6. Commit with:
+Retain the existing `WEATHER_CACHE` KV binding. Despite its historical name, this binding now stores small weather, TfL fallback and air-quality snapshots. Renaming it would create migration risk for no user benefit.
 
-   ```text
-   Fix TfL authenticated requests and fallback
-   ```
+Retain all existing secrets, including `TFL_API_KEY`, `METOFFICE_API_KEY`, `NATIONAL_RAIL_API_KEY` and `TICKETMASTER_API_KEY`. LAQN needs no additional secret.
 
-Do not upload the ZIP or its enclosing folder. No Cloudflare build-setting or Google Sites embed change is required.
+The existing hourly Cloudflare trigger remains sufficient because `/api/air-quality` also refreshes on demand when LAQN's own TTL expires.
 
-## 4. Validate production
+## Production validation
 
-After Cloudflare finishes deploying, open:
+After Cloudflare completes deployment, open:
 
 ```text
 https://london-now.ppastorin.workers.dev/api/health
-https://london-now.ppastorin.workers.dev/api/tfl
-https://london-now.ppastorin.workers.dev/api/airport-access
+https://london-now.ppastorin.workers.dev/api/air-quality
 https://london-now.ppastorin.workers.dev/
 ```
 
-`/api/health` must show version `0.5.5` and `"tfl": "registered"`.
+Health must return version `0.6.0` and:
 
-`/api/tfl` should return HTTP 200 with:
+```json
+"airQuality": "ready"
+```
+
+The air-quality response must return HTTP 200 and include:
 
 ```json
 {
-  "accessMode": "registered",
-  "stale": false,
-  "degraded": false
+  "provider": "London Air Quality Network",
+  "scope": "Highest current index reported across London monitoring sites",
+  "index": 1,
+  "band": "Low",
+  "stale": false
 }
 ```
 
-Refresh it after 75 seconds to force a new upstream cycle. A temporary upstream failure may instead return HTTP 200 with `stale: true` for no more than five minutes. The dashboard will say **TfL update delayed** and show the last confirmation time.
+The example index and band above illustrate the response shape only; production values will change. Validate that:
 
-If health says `anonymous`, the active Worker does not have either supported secret. Check the spelling, ensure it is an encrypted Secret for `london-now`, save it, and redeploy.
+- `index` is an integer from 1 to 10, or `null` when LAQN reports no current index;
+- `band` is Low, Moderate, High or Very High when an index exists;
+- `pollutants` and `reportingSiteCount` are present;
+- `dataAt`, `fetchedAt` and `validUntil` are plausible;
+- no API key or full upstream station payload is returned.
 
-If health says `registered` but `/api/tfl` still consistently returns HTTP 429, the code is sending a key; confirm in the TfL portal that this exact key belongs to an active application subscribed to the free product.
+Repeat the request before `validUntil`; it should normally report `x-cache: HIT`. After expiry, it should report `REFRESH`. A temporary upstream failure with an existing snapshot returns `x-cache: STALE` and the UI says **refresh delayed**.
 
-After all checks pass, tag the approved commit:
+## Interface and mobile validation
+
+1. Check the desktop dashboard at 1280 px: air quality must sit inside the weather card, not create a separate grid card.
+2. Check 768 px and confirm the weather/air-quality content does not overlap.
+3. Check the published Google Sites page at 320 px and 390 px.
+4. Confirm the complete air-quality module, weather source row and TfL card can all be reached.
+5. Confirm there is no horizontal scrollbar and only one usable vertical scroll path.
+6. Switch through Now, Travel, Flights, Events and Tools; all existing sections must remain reachable.
+7. Confirm both LAQN / Imperial and OGL v2.0 links open the official pages.
+
+The existing Google Sites embed code does not need to be replaced.
+
+After production passes, tag the approved commit:
 
 ```text
-v0.5.5-tfl-resilience-approved
+v0.6.0-air-quality-approved
 ```
-
-## Retained behaviour
-
-- Live Met Office forecast with request-time recovery and hourly refresh.
-- Live National Rail departures and public-transport airport access.
-- Ticketmaster event categories and London Advanced visual tool cards.
-- Bounded mobile views and the existing Google Sites scrolling fix.
-- Official airport departure-board links; the dashboard does not claim to provide live flight operations.
 
 ## Rollback
 
-If the release causes a regression, use Cloudflare deployment history to restore v0.5.4 and revert the GitHub commit. Secrets are not removed by a rollback.
+If the release causes a regression, restore v0.5.5 in Cloudflare deployment history and revert the GitHub commit. No Cloudflare resource or secret needs to be removed.

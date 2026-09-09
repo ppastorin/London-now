@@ -1,9 +1,9 @@
 {
   "name": "london-now",
-  "version": "0.5.5",
+  "version": "0.6.0",
   "private": true,
   "type": "module",
-  "description": "London Now with live TfL, Met Office weather, National Rail departures, airport access and Ticketmaster events.",
+  "description": "London Now with live TfL, Met Office weather, LAQN air quality, National Rail departures, airport access and Ticketmaster events.",
   "scripts": {
     "check": "node --check public/app.js && node --check worker/index.js && node scripts/validate.mjs && node --test tests/*.test.mjs",
     "dev": "wrangler dev",

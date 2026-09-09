@@ -2,14 +2,18 @@ const TFL_STATUS_URL = "https://api.tfl.gov.uk/Line/Mode/tube,dlr,overground,eli
 const MET_OFFICE_DAILY_URL = "https://data.hub.api.metoffice.gov.uk/sitespecific/v0/point/daily";
 const TICKETMASTER_EVENTS_URL = "https://app.ticketmaster.com/discovery/v2/events.json";
 const NATIONAL_RAIL_DEPARTURES_URL = "https://api1.raildata.org.uk/1010-live-departure-board-dep1_2/LDBWS/api/20220120/GetDepartureBoard";
+const LAQN_HOURLY_INDEX_URL = "https://api.erg.ic.ac.uk/AirQuality/Hourly/MonitoringIndex/GroupName=London/Json";
 const WEATHER_CACHE_KEY = "metoffice:global-spot:london:daily:v1";
 const TFL_LAST_GOOD_KEY = "tfl:status:last-good:v1";
+const AIR_QUALITY_CACHE_KEY = "laqn:london:hourly-index:v1";
 const TFL_CACHE_SECONDS = 75;
 const TFL_FALLBACK_MAX_AGE_MS = 5 * 60 * 1000;
 const TFL_FETCH_ATTEMPTS = 2;
 const RAIL_CACHE_SECONDS = 75;
 const WEATHER_REFRESH_AFTER_MS = 70 * 60 * 1000;
 const WEATHER_STALE_AFTER_MS = 2 * 60 * 60 * 1000;
+const AIR_QUALITY_DEFAULT_REFRESH_MS = 20 * 60 * 1000;
+const AIR_QUALITY_STALE_AFTER_MS = 2 * 60 * 60 * 1000;
 const EVENTS_CACHE_SECONDS = 6 * 60 * 60;
 
 const EVENT_CATEGORIES = {
@@ -57,10 +61,11 @@ export default {
       const configured = weatherState === "ready" && eventsState === "ready" && railState === "ready";
       return json({
         status: configured ? "ok" : "configuration-required",
-        version: "0.5.5",
+        version: "0.6.0",
         integrations: {
           tfl: getTflApiKey(env) ? "registered" : "anonymous",
           weather: weatherState,
+          airQuality: env.WEATHER_CACHE ? "ready" : "missing-kv",
           rail: railState,
           airportAccess: railState === "ready" ? "live-access" : "partial-live",
           events: eventsState
@@ -73,6 +78,7 @@ export default {
     if (url.pathname === "/api/rail") return handleRail(request, env, context);
     if (url.pathname === "/api/airport-access") return handleAirportAccess(request, env, context);
     if (url.pathname === "/api/weather") return handleWeather(env);
+    if (url.pathname === "/api/air-quality") return handleAirQuality(env);
     if (url.pathname === "/api/events") return handleEvents(request, env, context);
 
     if (url.pathname.startsWith("/api/")) return json({ error: "Not found" }, 404);
@@ -80,9 +86,10 @@ export default {
   },
 
   async scheduled(_event, env, context) {
-    if (env.METOFFICE_API_KEY && env.WEATHER_CACHE) {
-      context.waitUntil(refreshWeather(env));
-    }
+    if (!env.WEATHER_CACHE) return;
+    const refreshes = [refreshAirQuality(env)];
+    if (env.METOFFICE_API_KEY) refreshes.push(refreshWeather(env));
+    context.waitUntil(Promise.allSettled(refreshes));
   }
 };
 
@@ -408,6 +415,64 @@ async function handleWeather(env) {
   }
 }
 
+async function handleAirQuality(env) {
+  if (!env.WEATHER_CACHE) {
+    return json({ error: "Air-quality cache binding is not configured" }, 503, { "cache-control": "no-store" });
+  }
+
+  try {
+    let report = await env.WEATHER_CACHE.get(AIR_QUALITY_CACHE_KEY, "json");
+    const hadCachedReport = Boolean(report);
+    let cacheStatus = "HIT";
+    let refreshFailed = false;
+    if (shouldRefreshAirQuality(report)) {
+      try {
+        report = await refreshAirQuality(env);
+        cacheStatus = hadCachedReport ? "REFRESH" : "MISS";
+      } catch (error) {
+        if (!report) throw error;
+        refreshFailed = true;
+        cacheStatus = "STALE";
+      }
+    }
+
+    const stale = refreshFailed || Date.now() - Date.parse(report.fetchedAt) > AIR_QUALITY_STALE_AFTER_MS;
+    return json({ ...report, stale, refreshFailed }, 200, {
+      "cache-control": "public, max-age=300, s-maxage=300",
+      "x-cache": cacheStatus
+    });
+  } catch (error) {
+    return upstreamError(
+      "London air quality is temporarily unavailable",
+      error,
+      "London Air Quality Network",
+      "https://www.londonair.org.uk/Londonair/API/"
+    );
+  }
+}
+
+export function shouldRefreshAirQuality(report, now = Date.now()) {
+  const validUntil = Date.parse(report?.validUntil || "");
+  const fetchedAt = Date.parse(report?.fetchedAt || "");
+  if (Number.isFinite(validUntil)) return now >= validUntil;
+  return !Number.isFinite(fetchedAt) || now - fetchedAt >= AIR_QUALITY_DEFAULT_REFRESH_MS;
+}
+
+async function refreshAirQuality(env) {
+  const upstream = await fetch(LAQN_HOURLY_INDEX_URL, {
+    headers: {
+      accept: "application/json",
+      "user-agent": "LondonNow/0.6.0 (+https://www.londonadvanced.com/)"
+    },
+    signal: AbortSignal.timeout(12000)
+  });
+  if (!upstream.ok) throw new Error(`LAQN returned HTTP ${upstream.status}`);
+
+  const report = normalizeAirQuality(await upstream.json());
+  await env.WEATHER_CACHE.put(AIR_QUALITY_CACHE_KEY, JSON.stringify(report), { expirationTtl: 86400 });
+  return report;
+}
+
 export function shouldRefreshWeather(forecast, now = Date.now()) {
   const fetchedAt = Date.parse(forecast?.fetchedAt || "");
   return !Number.isFinite(fetchedAt) || now - fetchedAt >= WEATHER_REFRESH_AFTER_MS;
@@ -467,6 +532,70 @@ export function normalizeTfl(payload, checkedAt = new Date().toISOString()) {
     disruptionCount: disruptions.length,
     lines
   };
+}
+
+export function normalizeAirQuality(payload, fetchedAt = new Date().toISOString()) {
+  const root = payload?.HourlyAirQualityIndex;
+  if (!root || typeof root !== "object") throw new TypeError("Unexpected LAQN response");
+
+  const observations = [];
+  for (const authority of asArray(root.LocalAuthority)) {
+    for (const site of asArray(authority?.Site)) {
+      for (const species of asArray(site?.Species)) {
+        const index = Number(species?.["@AirQualityIndex"]);
+        if (!Number.isInteger(index) || index < 1 || index > 10) continue;
+        observations.push({
+          index,
+          band: airQualityBand(index),
+          pollutantCode: cleanText(species?.["@SpeciesCode"]),
+          pollutant: cleanText(species?.["@SpeciesDescription"]),
+          source: cleanText(species?.["@IndexSource"]),
+          siteCode: cleanText(site?.["@SiteCode"]),
+          siteName: cleanText(site?.["@SiteName"]),
+          siteType: cleanText(site?.["@SiteType"]),
+          bulletinAt: cleanText(site?.["@BulletinDate"])
+        });
+      }
+    }
+  }
+  const index = observations.length ? Math.max(...observations.map((item) => item.index)) : null;
+  const peaks = observations.filter((item) => item.index === index);
+  const ttlMinutes = Math.min(60, Math.max(5, Number(root["@TimeToLive"]) || 20));
+  const fetchedTime = Date.parse(fetchedAt);
+  const dataAt = observations.map((item) => item.bulletinAt).filter(Boolean).sort().at(-1) || null;
+
+  return {
+    provider: "London Air Quality Network",
+    sourceUrl: "https://www.londonair.org.uk/Londonair/API/",
+    licenceUrl: "https://www.nationalarchives.gov.uk/doc/open-government-licence/version/2/",
+    attribution: "London Air Quality Network data from the Environmental Research Group, Imperial College London",
+    scope: "Highest current index reported across London monitoring sites",
+    fetchedAt,
+    validUntil: new Date((Number.isFinite(fetchedTime) ? fetchedTime : Date.now()) + ttlMinutes * 60_000).toISOString(),
+    dataAt,
+    ttlMinutes,
+    index,
+    band: index == null ? "No data" : airQualityBand(index),
+    status: index == null ? "unavailable" : airQualityBand(index).toLowerCase().replace(/\s+/g, "-"),
+    pollutants: [...new Set(peaks.map((item) => item.pollutant || item.pollutantCode).filter(Boolean))],
+    peakSites: [...new Set(peaks.map((item) => item.siteName).filter(Boolean))].slice(0, 3),
+    reportingSiteCount: new Set(observations.map((item) => item.siteCode).filter(Boolean)).size,
+    observationCount: observations.length,
+    stale: false,
+    refreshFailed: false
+  };
+}
+
+function airQualityBand(index) {
+  if (index <= 3) return "Low";
+  if (index <= 6) return "Moderate";
+  if (index <= 9) return "High";
+  return "Very High";
+}
+
+function asArray(value) {
+  if (value == null) return [];
+  return Array.isArray(value) ? value : [value];
 }
 
 export function normalizeRailBoard(payload, options = {}, checkedAt = new Date().toISOString()) {

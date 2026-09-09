@@ -106,6 +106,53 @@
     return "🌥️";
   }
 
+  async function loadAirQuality() {
+    const panel = document.querySelector("#airQualityPanel");
+    const kicker = document.querySelector("#airQualityKicker");
+    const title = document.querySelector("#airQualityTitle");
+    const index = document.querySelector("#airQualityIndex");
+    const marker = document.querySelector("#airQualityMarker");
+    const summary = document.querySelector("#airQualitySummary");
+    const freshness = document.querySelector("#airQualityFreshness");
+
+    try {
+      const response = await fetch("./api/air-quality", { headers: { accept: "application/json" } });
+      const data = await response.json();
+      if (!response.ok) throw new Error(data.error || `HTTP ${response.status}`);
+
+      if (!Number.isInteger(data.index)) throw new Error("LAQN has not reported a current London index yet");
+      const pollutantText = data.pollutants?.length ? data.pollutants.join(" · ") : "Pollutant details unavailable";
+      kicker.textContent = data.stale ? "Air quality · refresh delayed" : "Air quality · hourly";
+      title.textContent = `${data.band} across London`;
+      index.innerHTML = `${data.index}<small>/10</small>`;
+      index.setAttribute("aria-label", `Air quality index ${data.index} out of 10, ${data.band}`);
+      index.className = `air-quality__index air-quality__index--${data.status}`;
+      marker.style.left = `${Math.max(0, Math.min(100, ((data.index - 1) / 9) * 100))}%`;
+      summary.textContent = `London network peak · ${pollutantText} · ${data.reportingSiteCount} reporting sites`;
+      freshness.textContent = data.stale
+        ? `Refresh delayed · last fetched ${formatTime(data.fetchedAt)}`
+        : `LAQN bulletin ${formatLaqnTime(data.dataAt)} · valid ${data.ttlMinutes} min`;
+      panel.classList.remove("is-loading", "air-quality--error");
+      panel.setAttribute("aria-busy", "false");
+    } catch (error) {
+      kicker.textContent = "Air quality · unavailable";
+      title.textContent = "Check London Air";
+      index.innerHTML = "—<small>/10</small>";
+      index.className = "air-quality__index air-quality__index--pending";
+      marker.style.left = "0%";
+      summary.textContent = error instanceof Error ? error.message : "Air-quality data could not be loaded.";
+      freshness.textContent = "Live fetch failed · use official source";
+      panel.classList.remove("is-loading");
+      panel.classList.add("air-quality--error");
+      panel.setAttribute("aria-busy", "false");
+    }
+  }
+
+  function formatLaqnTime(value) {
+    const match = String(value || "").match(/\b(\d{2}:\d{2})/);
+    return match ? match[1] : "time unavailable";
+  }
+
   function londonDateKey(date) {
     const parts = new Intl.DateTimeFormat("en-GB", {
       year: "numeric",
@@ -574,11 +621,13 @@
   applyView();
   loadTfl();
   loadWeather();
+  loadAirQuality();
   loadRail();
   loadAirportAccess();
   loadEvents();
   window.setInterval(loadTfl, 90_000);
   window.setInterval(loadWeather, 5 * 60_000);
+  window.setInterval(loadAirQuality, 15 * 60_000);
   window.setInterval(loadAirportAccess, 90_000);
   window.setInterval(loadRail, 90_000);
   window.setInterval(loadEvents, 30 * 60_000);

@@ -4,7 +4,7 @@
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width, initial-scale=1">
   <meta name="theme-color" content="#ffffff">
-  <meta name="description" content="London Now — live London weather, transport, airport access and events from London Advanced.">
+  <meta name="description" content="London Now — live London weather, air quality, transport, airport access and events from London Advanced.">
   <title>London Now · Live London dashboard</title>
   <link rel="stylesheet" href="./styles.css">
   <script src="./app.js" defer></script>
@@ -33,7 +33,7 @@
         <p class="eyebrow">Your compact London briefing</p>
         <h1 id="pageTitle">Know what matters before you set off.</h1>
       </div>
-      <p class="intro-copy">Weather, transport, airports and ideas for the day—with a direct route back to every official source.</p>
+      <p class="intro-copy">Weather, air quality, transport, airports and ideas for the day—with a direct route back to every official source.</p>
     </section>
 
     <section class="controls" aria-label="Dashboard controls">
@@ -71,6 +71,21 @@
           <span><strong id="weatherRain">—</strong> rain</span>
           <span><strong id="weatherWind">—</strong> wind</span>
         </div>
+        <section class="air-quality is-loading" id="airQualityPanel" aria-labelledby="airQualityTitle" aria-live="polite" aria-busy="true">
+          <div class="air-quality__heading">
+            <div>
+              <p class="air-quality__kicker" id="airQualityKicker">Air quality · checking</p>
+              <h3 id="airQualityTitle">London network</h3>
+            </div>
+            <span class="air-quality__index air-quality__index--pending" id="airQualityIndex" aria-label="Air quality index unavailable">—<small>/10</small></span>
+          </div>
+          <div class="air-quality__scale" aria-hidden="true"><span id="airQualityMarker"></span></div>
+          <p class="air-quality__summary" id="airQualitySummary">Checking the latest hourly monitoring index…</p>
+          <div class="air-quality__source">
+            <span id="airQualityFreshness">Waiting for LAQN</span>
+            <span><a href="https://www.londonair.org.uk/Londonair/API/" target="_blank" rel="noreferrer">LAQN / Imperial ↗</a> · <a href="https://www.nationalarchives.gov.uk/doc/open-government-licence/version/2/" target="_blank" rel="noreferrer">OGL v2.0 ↗</a></span>
+          </div>
+        </section>
         <footer class="source-row">
           <span id="weatherFreshness">Waiting for Met Office</span>
           <span class="source-links">

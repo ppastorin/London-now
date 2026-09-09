@@ -1,5 +1,15 @@
 # Changelog
 
+## 0.6.0 — 9 September 2026
+
+- Added the official LAQN hourly London monitoring-index feed through `/api/air-quality`.
+- Added a compact 1–10 air-quality scale inside the weather card, including band, peak pollutant, reporting-site count and bulletin time.
+- Defined the displayed value explicitly as the highest current index reported across London monitoring sites.
+- Added request-time refresh using LAQN's provider TTL and an hourly scheduled refresh.
+- Added KV-backed stale fallback for temporary upstream failures.
+- Added visible Imperial College London, LAQN and Open Government Licence v2.0 attribution.
+- Added normalization, singleton-record, no-data, malformed-response and refresh-boundary tests.
+
 ## 0.5.5 — 4 September 2026
 
 - Added `TFL_API_KEY` as the preferred Cloudflare secret name while retaining `TFL_APP_KEY` compatibility.
