@@ -27,6 +27,7 @@ const headers = await readFile(resolve(root, "public/_headers"), "utf8");
 const wrangler = JSON.parse(await readFile(resolve(root, "wrangler.jsonc"), "utf8"));
 const packageJson = JSON.parse(await readFile(resolve(root, "package.json"), "utf8"));
 const worker = await readFile(resolve(root, "worker/index.js"), "utf8");
+const app = await readFile(resolve(root, "public/app.js"), "utf8");
 const embed = await readFile(resolve(root, "GOOGLE-SITES-EMBED.html"), "utf8");
 const toolBlock = html.match(/<nav class="tool-links"[\s\S]*?<\/nav>/)?.[0] ?? "";
 const nativeToolUrls = [
@@ -100,7 +101,9 @@ const assertions = [
   [!worker.match(/NATIONAL_RAIL_API_KEY\s*[:=]\s*["'][^"']+["']/), "no National Rail key is committed"],
   [wrangler.kv_namespaces?.some((item) => item.binding === "WEATHER_CACHE" && !item.id), "weather KV is configured for automatic provisioning"],
   [wrangler.triggers?.crons?.includes("7 * * * *"), "hourly weather refresh is configured"],
-  [packageJson.version === "0.6.0", "package version is 0.6.0"],
+  [packageJson.version === "0.6.1", "package version is 0.6.1"],
+  [worker.includes("ticketmaster.evyy.net/c/7729619/1965662/24023"), "approved Ticketmaster UK affiliate wrapper is configured"],
+  [app.includes("sponsored noopener noreferrer") && app.includes("event-affiliate-disclosure"), "event affiliate links include sponsored markup and nearby disclosure"],
   [packageJson.devDependencies?.wrangler === "4.129.0", "Wrangler version is pinned"]
 ];
 
@@ -111,4 +114,4 @@ if (failures.length) {
 }
 
 assertions.forEach(([, label]) => console.log(`PASS: ${label}`));
-console.log("London Now v0.6.0 package validation passed.");
+console.log("London Now v0.6.1 package validation passed.");

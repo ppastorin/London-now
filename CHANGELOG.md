@@ -1,5 +1,15 @@
 # Changelog
 
+## 0.6.1 — 14 September 2026
+
+- Added Impact deep links to every valid Ticketmaster UK event returned by `/api/events`.
+- Preserved the original Ticketmaster URL separately in each event response.
+- Added visible advertising and commission disclosure beside live event links.
+- Added `rel="sponsored noopener noreferrer"` to affiliate links.
+- Added coverage for `www`, `theatre` and other Ticketmaster UK subdomains, including performance fragments.
+- Versioned the events cache key so deployment cannot reuse pre-affiliate responses.
+- Added affiliate-link, disclosure and unsafe-destination regression checks.
+
 ## 0.6.0 — 9 September 2026
 
 - Added the official LAQN hourly London monitoring-index feed through `/api/air-quality`.

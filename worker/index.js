@@ -1,6 +1,7 @@
 const TFL_STATUS_URL = "https://api.tfl.gov.uk/Line/Mode/tube,dlr,overground,elizabeth-line/Status";
 const MET_OFFICE_DAILY_URL = "https://data.hub.api.metoffice.gov.uk/sitespecific/v0/point/daily";
 const TICKETMASTER_EVENTS_URL = "https://app.ticketmaster.com/discovery/v2/events.json";
+const TICKETMASTER_AFFILIATE_URL = "https://ticketmaster.evyy.net/c/7729619/1965662/24023";
 const NATIONAL_RAIL_DEPARTURES_URL = "https://api1.raildata.org.uk/1010-live-departure-board-dep1_2/LDBWS/api/20220120/GetDepartureBoard";
 const LAQN_HOURLY_INDEX_URL = "https://api.erg.ic.ac.uk/AirQuality/Hourly/MonitoringIndex/GroupName=London/Json";
 const WEATHER_CACHE_KEY = "metoffice:global-spot:london:daily:v1";
@@ -61,7 +62,7 @@ export default {
       const configured = weatherState === "ready" && eventsState === "ready" && railState === "ready";
       return json({
         status: configured ? "ok" : "configuration-required",
-        version: "0.6.0",
+        version: "0.6.1",
         integrations: {
           tfl: getTflApiKey(env) ? "registered" : "anonymous",
           weather: weatherState,
@@ -117,7 +118,7 @@ async function handleEvents(request, env, context) {
   }
 
   const cache = caches.default;
-  const cacheUrl = new URL("/__cache/events", request.url);
+  const cacheUrl = new URL("/__cache/events-v2-affiliate", request.url);
   cacheUrl.search = new URLSearchParams({ date, category }).toString();
   const cacheKey = new Request(cacheUrl.toString(), { method: "GET" });
   const cached = await cache.match(cacheKey);
@@ -462,7 +463,7 @@ async function refreshAirQuality(env) {
   const upstream = await fetch(LAQN_HOURLY_INDEX_URL, {
     headers: {
       accept: "application/json",
-      "user-agent": "LondonNow/0.6.0 (+https://www.londonadvanced.com/)"
+      "user-agent": "LondonNow/0.6.1 (+https://www.londonadvanced.com/)"
     },
     signal: AbortSignal.timeout(12000)
   });
@@ -749,7 +750,8 @@ export function normalizeTicketmaster(payload, requestedDate, requestedCategory 
         subcategory: genre && genre !== "Undefined" ? genre : null,
         status: statusCode || "scheduled",
         price,
-        ticketUrl
+        ticketUrl,
+        affiliateUrl: ticketmasterAffiliateUrl(ticketUrl)
       };
     })
     .filter(Boolean)
@@ -762,7 +764,7 @@ export function normalizeTicketmaster(payload, requestedDate, requestedCategory 
     checkedAt,
     requestedDate,
     requestedCategory,
-    affiliateLinks: false,
+    affiliateLinks: events.some((event) => Boolean(event.affiliateUrl)),
     count: events.length,
     events
   };
@@ -807,6 +809,14 @@ function validHttpsUrl(value) {
   } catch {
     return null;
   }
+}
+
+export function ticketmasterAffiliateUrl(value) {
+  const destination = validHttpsUrl(value);
+  if (!destination) return null;
+  const affiliateUrl = new URL(TICKETMASTER_AFFILIATE_URL);
+  affiliateUrl.searchParams.set("u", destination);
+  return affiliateUrl.toString();
 }
 
 function finiteNumberOrNull(value) {
