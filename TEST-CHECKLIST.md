@@ -1,4 +1,4 @@
-# London Now v0.6.0 validation
+# London Now v0.6.1 validation
 
 ## LAQN source and licence
 
@@ -14,7 +14,7 @@
 
 - [ ] The TfL portal application is subscribed to the free registered product.
 - [ ] Cloudflare has an encrypted secret named exactly `TFL_API_KEY`.
-- [ ] `/api/health` reports version `0.6.0` and TfL `registered`.
+- [ ] `/api/health` reports version `0.6.1` and TfL `registered`.
 - [ ] `/api/tfl` returns HTTP 200 with `accessMode: "registered"` and `stale: false` during normal service.
 - [ ] No API key appears in the JSON response, browser source or repository.
 - [ ] A delayed fallback is visibly labelled and never used when more than five minutes old.
@@ -42,7 +42,7 @@
 
 ## API checks
 
-- [ ] `/api/health` returns HTTP 200 and version `0.6.0`.
+- [ ] `/api/health` returns HTTP 200 and version `0.6.1`.
 - [ ] Health reports air quality `ready`.
 - [ ] Health reports rail `ready` and airport access `live-access`.
 - [ ] `/api/rail?station=WAT` returns HTTP 200 and a `services` array.
@@ -91,4 +91,6 @@
 
 - [ ] GitHub `main` triggered a successful Cloudflare deployment.
 - [ ] Production API, homepage and published Google Sites checks passed.
-- [ ] Approved commit is tagged `v0.6.0-air-quality-approved`.
+- [ ] `/api/events` reports `affiliateLinks: true` and returns both `ticketUrl` and `affiliateUrl`.
+- [ ] An event action is labelled `Ad · Tickets`, shows the commission disclosure and resolves through the approved Impact account.
+- [ ] Approved commit is tagged `v0.6.1-ticketmaster-affiliate-approved`.

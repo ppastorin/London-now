@@ -1,4 +1,23 @@
-# London Now — v0.6.0 live air quality
+# London Now — v0.6.1
+
+## Ticketmaster UK affiliate links
+
+The Worker keeps the original Ticketmaster URL in `ticketUrl` and generates a separate
+`affiliateUrl` for every valid `ticketmaster.co.uk` subdomain returned by the Discovery
+API. This happens whenever the live events response is refreshed; it is not connected to
+the Sunday/Thursday curated-events schedule.
+
+The browser keeps each event-title link direct and uses the affiliate URL only for the
+explicit ticket action. It labels that action as advertising, shows a nearby commission
+disclosure and applies `rel="sponsored noopener noreferrer"`. The direct title link is
+also a fallback for visitors whose privacy tools block the tracking domain. No additional
+Cloudflare secret or package is required. Publisher `7729619`, campaign `1965662` and
+creative `24023` are public tracking identifiers.
+
+The `events-v2-affiliate` cache key prevents a new deployment from serving older
+non-affiliate event responses. Event data remains cached for six hours.
+
+## Live air quality
 
 This release adds live air quality from the London Air Quality Network (LAQN) to the existing weather card. It uses the official hourly London monitoring-index JSON feed and shows the highest current UK Daily Air Quality Index reported across participating London monitoring sites.
 
@@ -50,19 +69,17 @@ The upstream response is normalized server-side. Visitors never download the lar
 
 No new GitHub repository, Cloudflare Worker, KV namespace, variable or secret is required.
 
-1. Extract the release ZIP.
-2. Open the existing `london-now` GitHub repository.
-3. Select branch `main`.
-4. Choose **Add file → Upload files**.
-5. Upload the contents inside `london-now-v0.6.0-air-quality` to the repository root.
-6. Confirm the repository root still contains `public/`, `worker/`, `tests/`, `package.json` and `wrangler.jsonc`.
-7. Commit with:
+1. Create a feature branch in the existing `london-now` GitHub repository.
+2. Update the files at repository root; do not create an extra enclosing directory.
+3. Confirm the repository root still contains `public/`, `worker/`, `tests/`, `package.json` and `wrangler.jsonc`.
+4. Run `npm run check`.
+5. Open a pull request and test the Cloudflare branch preview.
+6. Squash-merge the pull request into `main` to trigger production deployment.
+7. Use commit title:
 
    ```text
-   Add live LAQN air quality
+   Add Ticketmaster UK affiliate links
    ```
-
-Do not upload the ZIP or create an extra enclosing directory.
 
 ## Cloudflare
 
@@ -92,7 +109,7 @@ https://london-now.ppastorin.workers.dev/api/air-quality
 https://london-now.ppastorin.workers.dev/
 ```
 
-Health must return version `0.6.0` and:
+Health must return version `0.6.1` and:
 
 ```json
 "airQuality": "ready"
@@ -135,9 +152,9 @@ The existing Google Sites embed code does not need to be replaced.
 After production passes, tag the approved commit:
 
 ```text
-v0.6.0-air-quality-approved
+v0.6.1-ticketmaster-affiliate-approved
 ```
 
 ## Rollback
 
-If the release causes a regression, restore v0.5.5 in Cloudflare deployment history and revert the GitHub commit. No Cloudflare resource or secret needs to be removed.
+If the release causes a regression, restore v0.6.0 in Cloudflare deployment history and revert the GitHub commit. No Cloudflare resource or secret needs to be removed.

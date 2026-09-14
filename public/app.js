@@ -366,6 +366,8 @@
     content.className = "event-copy";
     const title = document.createElement("strong");
     const link = document.createElement("a");
+    const actionUrl = event.affiliateUrl || event.ticketUrl;
+    const isAffiliate = Boolean(event.affiliateUrl);
     link.href = event.ticketUrl;
     link.target = "_blank";
     link.rel = "noopener noreferrer";
@@ -377,14 +379,20 @@
     const category = event.subcategory || event.category;
     details.textContent = [location, category, formatEventPrice(event.price)].filter(Boolean).join(" · ");
     content.append(title, details);
+    if (isAffiliate) {
+      const disclosure = document.createElement("small");
+      disclosure.className = "event-affiliate-disclosure";
+      disclosure.textContent = "Ad · We may earn a commission at no extra cost to you.";
+      content.appendChild(disclosure);
+    }
 
     const action = document.createElement("a");
     action.className = "event-action";
-    action.href = event.ticketUrl;
+    action.href = actionUrl;
     action.target = "_blank";
-    action.rel = "noopener noreferrer";
-    action.textContent = "Tickets ↗";
-    action.setAttribute("aria-label", `Tickets for ${event.title}`);
+    action.rel = isAffiliate ? "sponsored noopener noreferrer" : "noopener noreferrer";
+    action.textContent = isAffiliate ? "Ad · Tickets ↗" : "Tickets ↗";
+    action.setAttribute("aria-label", `${isAffiliate ? "Advertisement: " : ""}Tickets for ${event.title}`);
     item.append(time, content, action);
     return item;
   }
