@@ -62,7 +62,7 @@ export default {
       const configured = weatherState === "ready" && eventsState === "ready" && railState === "ready";
       return json({
         status: configured ? "ok" : "configuration-required",
-        version: "0.6.1",
+        version: "0.6.2",
         integrations: {
           tfl: getTflApiKey(env) ? "registered" : "anonymous",
           weather: weatherState,
@@ -463,7 +463,7 @@ async function refreshAirQuality(env) {
   const upstream = await fetch(LAQN_HOURLY_INDEX_URL, {
     headers: {
       accept: "application/json",
-      "user-agent": "LondonNow/0.6.1 (+https://www.londonadvanced.com/)"
+      "user-agent": "LondonNow/0.6.2 (+https://www.londonadvanced.com/)"
     },
     signal: AbortSignal.timeout(12000)
   });

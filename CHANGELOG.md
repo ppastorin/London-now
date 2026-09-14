@@ -1,5 +1,11 @@
 # Changelog
 
+## 0.6.2 — 14 September 2026
+
+- Changed event-title links to use the same Ticketmaster affiliate deep link as the ticket action.
+- Applied `rel="sponsored noopener noreferrer"` to affiliate event-title links.
+- Added a regression check requiring both primary event links to use the affiliate-aware URL.
+
 ## 0.6.1 — 14 September 2026
 
 - Added Impact deep links to every valid Ticketmaster UK event returned by `/api/events`.
