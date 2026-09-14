@@ -1,4 +1,4 @@
-# London Now — v0.6.1
+# London Now — v0.6.2
 
 ## Ticketmaster UK affiliate links
 
@@ -7,12 +7,12 @@ The Worker keeps the original Ticketmaster URL in `ticketUrl` and generates a se
 API. This happens whenever the live events response is refreshed; it is not connected to
 the Sunday/Thursday curated-events schedule.
 
-The browser keeps each event-title link direct and uses the affiliate URL only for the
-explicit ticket action. It labels that action as advertising, shows a nearby commission
-disclosure and applies `rel="sponsored noopener noreferrer"`. The direct title link is
-also a fallback for visitors whose privacy tools block the tracking domain. No additional
-Cloudflare secret or package is required. Publisher `7729619`, campaign `1965662` and
-creative `24023` are public tracking identifiers.
+The browser uses the affiliate URL for both the event-title link and the explicit ticket
+action. Both links apply `rel="sponsored noopener noreferrer"`; the ticket action is
+labelled as advertising and a nearby commission disclosure applies to the event links.
+The API retains the original URL in `ticketUrl` for provenance and diagnostics. No
+additional Cloudflare secret or package is required. Publisher `7729619`, campaign
+`1965662` and creative `24023` are public tracking identifiers.
 
 The `events-v2-affiliate` cache key prevents a new deployment from serving older
 non-affiliate event responses. Event data remains cached for six hours.
@@ -109,7 +109,7 @@ https://london-now.ppastorin.workers.dev/api/air-quality
 https://london-now.ppastorin.workers.dev/
 ```
 
-Health must return version `0.6.1` and:
+Health must return version `0.6.2` and:
 
 ```json
 "airQuality": "ready"
@@ -152,7 +152,7 @@ The existing Google Sites embed code does not need to be replaced.
 After production passes, tag the approved commit:
 
 ```text
-v0.6.1-ticketmaster-affiliate-approved
+v0.6.2-affiliate-event-title-approved
 ```
 
 ## Rollback

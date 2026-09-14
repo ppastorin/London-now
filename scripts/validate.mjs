@@ -101,9 +101,10 @@ const assertions = [
   [!worker.match(/NATIONAL_RAIL_API_KEY\s*[:=]\s*["'][^"']+["']/), "no National Rail key is committed"],
   [wrangler.kv_namespaces?.some((item) => item.binding === "WEATHER_CACHE" && !item.id), "weather KV is configured for automatic provisioning"],
   [wrangler.triggers?.crons?.includes("7 * * * *"), "hourly weather refresh is configured"],
-  [packageJson.version === "0.6.1", "package version is 0.6.1"],
+  [packageJson.version === "0.6.2", "package version is 0.6.2"],
   [worker.includes("ticketmaster.evyy.net/c/7729619/1965662/24023"), "approved Ticketmaster UK affiliate wrapper is configured"],
   [app.includes("sponsored noopener noreferrer") && app.includes("event-affiliate-disclosure"), "event affiliate links include sponsored markup and nearby disclosure"],
+  [app.includes("link.href = actionUrl") && app.includes("action.href = actionUrl"), "event titles and ticket actions use the same affiliate-aware URL"],
   [packageJson.devDependencies?.wrangler === "4.129.0", "Wrangler version is pinned"]
 ];
 
@@ -114,4 +115,4 @@ if (failures.length) {
 }
 
 assertions.forEach(([, label]) => console.log(`PASS: ${label}`));
-console.log("London Now v0.6.1 package validation passed.");
+console.log("London Now v0.6.2 package validation passed.");

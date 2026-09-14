@@ -368,9 +368,9 @@
     const link = document.createElement("a");
     const actionUrl = event.affiliateUrl || event.ticketUrl;
     const isAffiliate = Boolean(event.affiliateUrl);
-    link.href = event.ticketUrl;
+    link.href = actionUrl;
     link.target = "_blank";
-    link.rel = "noopener noreferrer";
+    link.rel = isAffiliate ? "sponsored noopener noreferrer" : "noopener noreferrer";
     link.textContent = event.title;
     title.appendChild(link);
 
