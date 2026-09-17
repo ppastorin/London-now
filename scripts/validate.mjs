@@ -83,6 +83,7 @@ const assertions = [
   [worker.includes("TICKETMASTER_API_KEY") && worker.includes("EVENTS_CACHE_SECONDS"), "Ticketmaster secret and event caching are configured"],
   [html.includes('id="eventCategory"') && html.includes('value="music"') && html.includes('value="arts"') && html.includes('value="sports"') && html.includes('value="family"'), "event category selector is present"],
   [html.includes('id="eventDateFrom"') && html.includes('id="eventDateTo"') && html.includes('id="eventDateReset"'), "events-only date and date-range controls are present"],
+  [!html.includes("selectedDateBadge") && !app.includes("updateEventDateBadge") && !css.includes(".date-badge"), "obsolete event date badge is absent"],
   [app.includes("selectedEventStartDate") && app.includes("selectedEventEndDate") && app.includes("startDate: selectedEventStartDate"), "event dates are independent from the dashboard weather date"],
   [worker.includes("validateEventDateRange") && worker.includes("londonDateRangeUtc") && worker.includes("MAX_EVENT_RANGE_DAYS = 31"), "event API validates and converts bounded date ranges"],
   [html.includes('id="eventPagination"') && html.includes('id="eventPreviousPage"') && html.includes('id="eventNextPage"'), "event pagination controls are present"],

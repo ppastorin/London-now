@@ -24,7 +24,6 @@
   const settingsDialog = document.querySelector("#settingsDialog");
   const settingsForm = document.querySelector("#settingsForm");
   const dateSwitcher = document.querySelector("#dateSwitcher");
-  const selectedDateBadge = document.querySelector("#selectedDateBadge");
   const eventDateForm = document.querySelector("#eventDateForm");
   const eventDateFrom = document.querySelector("#eventDateFrom");
   const eventDateTo = document.querySelector("#eventDateTo");
@@ -612,7 +611,6 @@
     eventDateFrom.value = selectedEventStartDate;
     eventDateTo.value = selectedEventEndDate;
     updateEventDateLimits();
-    updateEventDateBadge();
   }
 
   function updateEventDateLimits() {
@@ -646,7 +644,6 @@
     selectedEventStartDate = start;
     selectedEventEndDate = end;
     selectedEventPage = 0;
-    updateEventDateBadge();
     setEventDateHint(days === 1 ? "Showing events for one day." : `Showing a ${days}-day range.`);
     return true;
   }
@@ -657,15 +654,6 @@
     eventDateTo.value = today;
     updateEventDateLimits();
     if (applyEventDateFilter()) loadEvents();
-  }
-
-  function updateEventDateBadge() {
-    const today = londonDateKey(new Date());
-    selectedDateBadge.textContent = selectedEventStartDate === selectedEventEndDate
-      ? selectedEventStartDate === today
-        ? "Today"
-        : formatEventDate(selectedEventStartDate, { weekday: "short", day: "numeric", month: "short" })
-      : `${formatEventDate(selectedEventStartDate, { day: "numeric", month: "short" })}–${formatEventDate(selectedEventEndDate, { day: "numeric", month: "short" })}`;
   }
 
   function setEventDateHint(message, isError = false) {
