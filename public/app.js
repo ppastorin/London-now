@@ -622,7 +622,6 @@
   if (typeof mobileLayout.addEventListener === "function") mobileLayout.addEventListener("change", handleLayoutChange);
   else mobileLayout.addListener(handleLayoutChange);
 
-  document.querySelector("#fullScreenLink").href = window.location.href;
   document.querySelector("#eventCategory").addEventListener("change", loadEvents);
   renderDates();
   applyPreferences();
