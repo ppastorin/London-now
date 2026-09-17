@@ -89,7 +89,7 @@ const assertions = [
   [app.includes("selectedEventPage") && app.includes("renderEventPagination") && app.includes("changeEventPage"), "client event pagination state and navigation are present"],
   [worker.includes("EVENTS_PAGE_SIZE = 6") && worker.includes("validateEventPage") && worker.includes("TICKETMASTER_DEEP_PAGE_LIMIT = 1000"), "event API pagination respects Ticketmaster's deep-page boundary"],
   [html.includes('id="eventList"') && html.includes('id="eventsFreshness"'), "live event result and freshness regions are present"],
-  [html.includes("https://www.ticketmaster.co.uk/discover/london") && !html.includes("www.timeout.com"), "Ticketmaster replaces the former Time Out event link"],
+  [html.includes("https://ticketmaster.evyy.net/c/7729619/1965662/24023?u=https%3A%2F%2Fwww.ticketmaster.co.uk%2Fdiscover%2Flondon") && html.includes('rel="sponsored noopener noreferrer"') && !html.includes('href="https://www.ticketmaster.co.uk/discover/london"'), "Ticketmaster footer uses the approved affiliate link"],
   [worker.includes("Public-transport access only; not flight operations"), "rail-access and flight-board scopes are separated"],
   [html.includes("https://www.heathrow.com/departures") && html.includes("https://www.london-luton.co.uk/departures") && html.includes("https://www.stanstedairport.com/departures/"), "departure-specific airport links are present"],
   [html.includes("https://www.gatwickairport.com/flights") && html.includes("https://www.londoncityairport.com/flight-info/departures-arrivals"), "official combined airport boards are present"],
