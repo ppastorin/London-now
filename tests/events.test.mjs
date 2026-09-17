@@ -5,7 +5,8 @@ import {
   londonDayUtcRange,
   normalizeTicketmaster,
   ticketmasterAffiliateUrl,
-  validateEventDateRange
+  validateEventDateRange,
+  validateEventPage
 } from "../worker/index.js";
 
 const requestedDate = "2026-09-05";
@@ -169,4 +170,36 @@ test("builds a London UTC interval across a daylight-saving change", () => {
     start: "2026-10-23T23:00:00Z",
     end: "2026-10-27T00:00:00Z"
   });
+});
+
+test("preserves Ticketmaster pagination metadata for chronological browsing", () => {
+  const result = normalizeTicketmaster({
+    _embedded: { events: [event()] },
+    page: { number: 2, size: 6, totalElements: 25, totalPages: 5 }
+  }, requestedDate, "music", checkedAt, requestedDate, 2);
+
+  assert.deepEqual(result.pagination, {
+    page: 2,
+    pageSize: 6,
+    totalElements: 25,
+    totalElementsCapped: false,
+    totalPages: 5,
+    hasPrevious: true,
+    hasNext: true
+  });
+});
+
+test("caps pagination at Ticketmaster's documented deep-paging boundary", () => {
+  const result = normalizeTicketmaster({
+    _embedded: { events: [event()] },
+    page: { number: 0, size: 6, totalElements: 1200, totalPages: 200 }
+  }, requestedDate);
+
+  assert.equal(result.pagination.totalElements, 1000);
+  assert.equal(result.pagination.totalElementsCapped, true);
+  assert.equal(result.pagination.totalPages, 167);
+  assert.equal(validateEventPage("166"), 166);
+  assert.throws(() => validateEventPage("167"), /between 0 and 166/);
+  assert.throws(() => validateEventPage("-1"), /Invalid event page/);
+  assert.throws(() => validateEventPage("two"), /Invalid event page/);
 });

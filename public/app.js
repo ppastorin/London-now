@@ -29,6 +29,10 @@
   const eventDateFrom = document.querySelector("#eventDateFrom");
   const eventDateTo = document.querySelector("#eventDateTo");
   const eventDateHint = document.querySelector("#eventDateHint");
+  const eventPagination = document.querySelector("#eventPagination");
+  const eventPreviousPage = document.querySelector("#eventPreviousPage");
+  const eventNextPage = document.querySelector("#eventNextPage");
+  const eventPageStatus = document.querySelector("#eventPageStatus");
   const viewTabs = [...document.querySelectorAll(".view-tab")];
   const cards = [...document.querySelectorAll("[data-card]")];
   const mobileLayout = window.matchMedia("(max-width: 640px)");
@@ -38,6 +42,7 @@
   let selectedWeatherDate = londonDateKey(new Date());
   let selectedEventStartDate = selectedWeatherDate;
   let selectedEventEndDate = selectedWeatherDate;
+  let selectedEventPage = 0;
   let weatherForecast = null;
   let eventsRequest = null;
 
@@ -312,7 +317,7 @@
     }
   }
 
-  async function loadEvents() {
+  async function loadEvents({ scrollToResults = false } = {}) {
     const card = document.querySelector("#eventsCard");
     const list = document.querySelector("#eventList");
     const kicker = document.querySelector("#eventsKicker");
@@ -325,13 +330,15 @@
     card.setAttribute("aria-busy", "true");
     list.setAttribute("aria-busy", "true");
     list.replaceChildren(createLoadingRow("Finding events in London…"));
+    setEventPaginationLoading(true);
     kicker.textContent = "What’s on · checking";
 
     try {
       const params = new URLSearchParams({
         startDate: selectedEventStartDate,
         endDate: selectedEventEndDate,
-        category
+        category,
+        page: String(selectedEventPage)
       });
       const response = await fetch(`./api/events?${params}`, {
         headers: { accept: "application/json" },
@@ -341,15 +348,31 @@
       if (!response.ok) throw new Error(data.error || `HTTP ${response.status}`);
 
       list.replaceChildren();
+      const pagination = data.pagination || {
+        page: 0,
+        totalPages: data.events.length ? 1 : 0,
+        totalElements: data.events.length,
+        totalElementsCapped: false,
+        hasPrevious: false,
+        hasNext: false
+      };
+      const totalLabel = formatEventTotal(pagination);
       if (data.events.length) {
         const showEventDates = selectedEventStartDate !== selectedEventEndDate;
-        data.events.slice(0, 6).forEach((event) => list.appendChild(createEventRow(event, showEventDates)));
-        kicker.textContent = `What’s on · ${data.events.length} found`;
+        data.events.forEach((event) => list.appendChild(createEventRow(event, showEventDates)));
+        kicker.textContent = `What’s on · ${totalLabel} found`;
+      } else if (pagination.totalElements > 0) {
+        list.appendChild(createEventMessage("No available listings on this page", "Use the page controls to continue browsing."));
+        kicker.textContent = `What’s on · ${totalLabel} found`;
       } else {
         list.appendChild(createEventMessage("No matching events found", "Try another category or check Ticketmaster directly."));
         kicker.textContent = "What’s on · no matches";
       }
+      renderEventPagination(pagination);
       freshness.textContent = `Ticketmaster checked ${formatTime(data.checkedAt)}`;
+      if (scrollToResults) {
+        window.requestAnimationFrame(() => list.scrollIntoView({ behavior: "smooth", block: "start" }));
+      }
       list.setAttribute("aria-busy", "false");
       card.classList.remove("is-loading");
       card.setAttribute("aria-busy", "false");
@@ -360,11 +383,49 @@
         error instanceof Error ? error.message : "Check Ticketmaster for current listings."
       ));
       kicker.textContent = "What’s on · unavailable";
+      renderEventPagination(null);
       freshness.textContent = "Live fetch failed · use official source";
       list.setAttribute("aria-busy", "false");
       card.classList.remove("is-loading");
       card.setAttribute("aria-busy", "false");
     }
+  }
+
+  function renderEventPagination(pagination) {
+    eventPagination.setAttribute("aria-busy", "false");
+    if (!pagination || pagination.totalPages <= 1) {
+      eventPagination.hidden = true;
+      if (pagination) selectedEventPage = pagination.page;
+      return;
+    }
+
+    selectedEventPage = pagination.page;
+    eventPagination.hidden = false;
+    eventPreviousPage.disabled = !pagination.hasPrevious;
+    eventNextPage.disabled = !pagination.hasNext;
+    eventPageStatus.textContent = `Page ${pagination.page + 1} of ${pagination.totalPages} · ${formatEventTotal(pagination)} results`;
+  }
+
+  function setEventPaginationLoading(isLoading) {
+    eventPagination.setAttribute("aria-busy", isLoading ? "true" : "false");
+    if (isLoading) {
+      eventPreviousPage.disabled = true;
+      eventNextPage.disabled = true;
+    }
+  }
+
+  function formatEventTotal(pagination) {
+    const total = Number.isFinite(Number(pagination?.totalElements))
+      ? Number(pagination.totalElements).toLocaleString("en-GB")
+      : "0";
+    return pagination?.totalElementsCapped ? `${total}+` : total;
+  }
+
+  function changeEventPage(offset) {
+    const nextPage = selectedEventPage + offset;
+    if (nextPage < 0) return;
+    selectedEventPage = nextPage;
+    loadEvents({ scrollToResults: true });
   }
 
   function createEventRow(event, showDate = false) {
@@ -584,6 +645,7 @@
 
     selectedEventStartDate = start;
     selectedEventEndDate = end;
+    selectedEventPage = 0;
     updateEventDateBadge();
     setEventDateHint(days === 1 ? "Showing events for one day." : `Showing a ${days}-day range.`);
     return true;
@@ -734,7 +796,10 @@
   if (typeof mobileLayout.addEventListener === "function") mobileLayout.addEventListener("change", handleLayoutChange);
   else mobileLayout.addListener(handleLayoutChange);
 
-  document.querySelector("#eventCategory").addEventListener("change", loadEvents);
+  document.querySelector("#eventCategory").addEventListener("change", () => {
+    selectedEventPage = 0;
+    loadEvents();
+  });
   eventDateFrom.addEventListener("change", updateEventDateLimits);
   eventDateTo.addEventListener("change", () => setEventDateHint("Choose one day or a range of up to 31 days."));
   eventDateForm.addEventListener("submit", (event) => {
@@ -742,6 +807,8 @@
     if (applyEventDateFilter()) loadEvents();
   });
   document.querySelector("#eventDateReset").addEventListener("click", resetEventDateFilter);
+  eventPreviousPage.addEventListener("click", () => changeEventPage(-1));
+  eventNextPage.addEventListener("click", () => changeEventPage(1));
   renderDates();
   initialiseEventDateFilter();
   applyPreferences();

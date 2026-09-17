@@ -17,6 +17,9 @@ const AIR_QUALITY_DEFAULT_REFRESH_MS = 20 * 60 * 1000;
 const AIR_QUALITY_STALE_AFTER_MS = 2 * 60 * 60 * 1000;
 const EVENTS_CACHE_SECONDS = 6 * 60 * 60;
 const MAX_EVENT_RANGE_DAYS = 31;
+const EVENTS_PAGE_SIZE = 6;
+const TICKETMASTER_DEEP_PAGE_LIMIT = 1000;
+const MAX_EVENT_PAGE = Math.floor((TICKETMASTER_DEEP_PAGE_LIMIT - 1) / EVENTS_PAGE_SIZE);
 
 const EVENT_CATEGORIES = {
   all: null,
@@ -113,9 +116,12 @@ async function handleEvents(request, env, context) {
   const startDate = requestUrl.searchParams.get("startDate") || legacyDate || londonDateKey(new Date());
   const endDate = requestUrl.searchParams.get("endDate") || startDate;
   const category = requestUrl.searchParams.get("category") || "all";
+  const pageValue = requestUrl.searchParams.get("page") || "0";
   let requestedRange;
+  let requestedPage;
   try {
     requestedRange = validateEventDateRange(startDate, endDate);
+    requestedPage = validateEventPage(pageValue);
   } catch (error) {
     return json({ error: error instanceof Error ? error.message : "Invalid event date range" }, 400, { "cache-control": "no-store" });
   }
@@ -124,8 +130,8 @@ async function handleEvents(request, env, context) {
   }
 
   const cache = caches.default;
-  const cacheUrl = new URL("/__cache/events-v3-range-affiliate", request.url);
-  cacheUrl.search = new URLSearchParams({ startDate, endDate, category }).toString();
+  const cacheUrl = new URL("/__cache/events-v4-paginated-affiliate", request.url);
+  cacheUrl.search = new URLSearchParams({ startDate, endDate, category, page: String(requestedPage) }).toString();
   const cacheKey = new Request(cacheUrl.toString(), { method: "GET" });
   const cached = await cache.match(cacheKey);
   if (cached) return withCacheStatus(cached, "HIT");
@@ -141,7 +147,8 @@ async function handleEvents(request, env, context) {
   upstreamUrl.searchParams.set("includeTBA", "no");
   upstreamUrl.searchParams.set("includeTBD", "no");
   upstreamUrl.searchParams.set("sort", "date,asc");
-  upstreamUrl.searchParams.set("size", "100");
+  upstreamUrl.searchParams.set("size", String(EVENTS_PAGE_SIZE));
+  upstreamUrl.searchParams.set("page", String(requestedPage));
   if (EVENT_CATEGORIES[category]) {
     upstreamUrl.searchParams.set("classificationName", EVENT_CATEGORIES[category]);
   }
@@ -158,7 +165,8 @@ async function handleEvents(request, env, context) {
       requestedRange.startDate,
       category,
       new Date().toISOString(),
-      requestedRange.endDate
+      requestedRange.endDate,
+      requestedPage
     );
     const response = json(events, 200, {
       "cache-control": `public, max-age=300, s-maxage=${EVENTS_CACHE_SECONDS}`,
@@ -730,7 +738,8 @@ export function normalizeTicketmaster(
   requestedStartDate,
   requestedCategory = "all",
   checkedAt = new Date().toISOString(),
-  requestedEndDate = requestedStartDate
+  requestedEndDate = requestedStartDate,
+  requestedPage = 0
 ) {
   const rawEvents = payload?._embedded?.events;
   if (rawEvents != null && !Array.isArray(rawEvents)) {
@@ -773,8 +782,9 @@ export function normalizeTicketmaster(
       };
     })
     .filter(Boolean)
-    .sort((a, b) => eventSortKey(a).localeCompare(eventSortKey(b)) || a.title.localeCompare(b.title))
-    .slice(0, 12);
+    .sort((a, b) => eventSortKey(a).localeCompare(eventSortKey(b)) || a.title.localeCompare(b.title));
+
+  const pagination = normalizeEventPagination(payload?.page, requestedPage, events.length);
 
   return {
     provider: "Ticketmaster Discovery API",
@@ -786,7 +796,32 @@ export function normalizeTicketmaster(
     requestedCategory,
     affiliateLinks: events.some((event) => Boolean(event.affiliateUrl)),
     count: events.length,
+    pagination,
     events
+  };
+}
+
+function normalizeEventPagination(page, requestedPage, returnedCount) {
+  const pageNumber = Number.isInteger(page?.number) && page.number >= 0 ? page.number : requestedPage;
+  const pageSize = Number.isInteger(page?.size) && page.size > 0 ? page.size : EVENTS_PAGE_SIZE;
+  const reportedTotal = Number.isInteger(page?.totalElements) && page.totalElements >= 0
+    ? page.totalElements
+    : returnedCount;
+  const totalElements = Math.min(reportedTotal, TICKETMASTER_DEEP_PAGE_LIMIT);
+  const calculatedPages = totalElements > 0 ? Math.ceil(totalElements / pageSize) : 0;
+  const reportedPages = Number.isInteger(page?.totalPages) && page.totalPages >= 0
+    ? page.totalPages
+    : calculatedPages;
+  const totalPages = Math.min(reportedPages, MAX_EVENT_PAGE + 1);
+
+  return {
+    page: pageNumber,
+    pageSize,
+    totalElements,
+    totalElementsCapped: reportedTotal > TICKETMASTER_DEEP_PAGE_LIMIT,
+    totalPages,
+    hasPrevious: pageNumber > 0,
+    hasNext: pageNumber + 1 < totalPages
   };
 }
 
@@ -849,6 +884,15 @@ function isValidDateKey(value) {
   const [year, month, day] = value.split("-").map(Number);
   const date = new Date(Date.UTC(year, month - 1, day));
   return date.getUTCFullYear() === year && date.getUTCMonth() === month - 1 && date.getUTCDate() === day;
+}
+
+export function validateEventPage(value = "0") {
+  if (!/^\d+$/.test(String(value))) throw new RangeError("Invalid event page");
+  const page = Number(value);
+  if (!Number.isSafeInteger(page) || page < 0 || page > MAX_EVENT_PAGE) {
+    throw new RangeError(`Event page must be between 0 and ${MAX_EVENT_PAGE}`);
+  }
+  return page;
 }
 
 export function validateEventDateRange(startDate, endDate = startDate) {

@@ -678,6 +678,36 @@ h2 {
 
 .event-message { grid-template-columns: 1fr !important; }
 
+.event-pagination {
+  display: grid;
+  grid-template-columns: auto minmax(0, 1fr) auto;
+  align-items: center;
+  gap: 12px;
+  margin: -6px 0 20px;
+  padding-top: 14px;
+  border-top: 1px solid var(--line);
+}
+
+.event-pagination[hidden] { display: none; }
+
+.event-pagination span {
+  color: var(--muted);
+  font-size: 12px;
+  font-weight: 750;
+  text-align: center;
+}
+
+.event-pagination .inline-control {
+  min-width: 96px;
+  background: var(--white);
+}
+
+.event-pagination .inline-control:disabled {
+  transform: none;
+  opacity: 0.42;
+  cursor: not-allowed;
+}
+
 .card--events { grid-column: span 8; }
 .card--tools { grid-column: 1 / -1; }
 
@@ -907,6 +937,13 @@ select {
   .event-date-separator { display: none; }
   .event-date-apply,
   .event-date-reset { width: 100%; }
+  .event-pagination {
+    grid-template-columns: 1fr 1fr;
+  }
+  .event-pagination span {
+    grid-column: 1 / -1;
+    grid-row: 1;
+  }
   .event-list li {
     grid-template-columns: 50px minmax(0, 1fr);
   }
