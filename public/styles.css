@@ -546,8 +546,25 @@ h2 {
 }
 
 .event-list time {
+  display: flex;
+  flex-direction: column;
   color: var(--red);
   font-weight: 800;
+}
+
+.event-day {
+  color: var(--muted);
+  font-size: 11px;
+  line-height: 1.2;
+  white-space: nowrap;
+}
+
+.event-filters {
+  display: grid;
+  gap: 10px;
+  margin: -4px 0 14px;
+  padding-bottom: 14px;
+  border-bottom: 1px solid var(--line);
 }
 
 .event-filter {
@@ -555,7 +572,6 @@ h2 {
   grid-template-columns: auto minmax(0, 1fr);
   align-items: center;
   gap: 12px;
-  margin: -4px 0 12px;
   color: var(--muted);
   font-size: 13px;
   font-weight: 800;
@@ -566,6 +582,75 @@ h2 {
   margin: 0;
   padding-block: 6px;
 }
+
+.event-date-form {
+  display: grid;
+  grid-template-columns: auto minmax(128px, 1fr) auto minmax(128px, 1fr) auto auto;
+  align-items: end;
+  gap: 8px;
+}
+
+.event-filter-label,
+.event-date-field > span {
+  color: var(--muted);
+  font-size: 12px;
+  font-weight: 800;
+}
+
+.event-filter-label {
+  align-self: center;
+  font-size: 13px;
+}
+
+.event-date-field {
+  display: grid;
+  gap: 4px;
+}
+
+.event-date-field input {
+  width: 100%;
+  min-height: 42px;
+  padding: 7px 9px;
+  border: 1px solid var(--line);
+  border-radius: 9px;
+  background: var(--white);
+  color: var(--ink);
+}
+
+.event-date-separator {
+  align-self: center;
+  padding-bottom: 10px;
+  color: var(--muted);
+  font-size: 12px;
+}
+
+.event-date-apply {
+  min-height: 42px;
+  padding-inline: 13px;
+  background: var(--ink);
+  color: var(--white);
+}
+
+.event-date-reset {
+  min-height: 42px;
+  padding: 7px 4px;
+  border: 0;
+  background: transparent;
+  color: var(--ink);
+  cursor: pointer;
+  font-size: 12px;
+  font-weight: 800;
+  text-decoration: underline;
+  text-underline-offset: 3px;
+}
+
+.event-filter-hint {
+  margin: -2px 0 0;
+  color: var(--muted);
+  font-size: 11px;
+}
+
+.event-filter-hint.is-error { color: var(--red); font-weight: 750; }
 
 .event-copy { min-width: 0; }
 
@@ -815,6 +900,13 @@ select {
     max-width: none;
     text-align: left;
   }
+  .event-date-form {
+    grid-template-columns: minmax(0, 1fr) minmax(0, 1fr);
+  }
+  .event-filter-label { grid-column: 1 / -1; }
+  .event-date-separator { display: none; }
+  .event-date-apply,
+  .event-date-reset { width: 100%; }
   .event-list li {
     grid-template-columns: 50px minmax(0, 1fr);
   }

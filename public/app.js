@@ -25,6 +25,10 @@
   const settingsForm = document.querySelector("#settingsForm");
   const dateSwitcher = document.querySelector("#dateSwitcher");
   const selectedDateBadge = document.querySelector("#selectedDateBadge");
+  const eventDateForm = document.querySelector("#eventDateForm");
+  const eventDateFrom = document.querySelector("#eventDateFrom");
+  const eventDateTo = document.querySelector("#eventDateTo");
+  const eventDateHint = document.querySelector("#eventDateHint");
   const viewTabs = [...document.querySelectorAll(".view-tab")];
   const cards = [...document.querySelectorAll("[data-card]")];
   const mobileLayout = window.matchMedia("(max-width: 640px)");
@@ -32,6 +36,8 @@
   let activeView = "now";
   let preferences = readPreferences();
   let selectedWeatherDate = londonDateKey(new Date());
+  let selectedEventStartDate = selectedWeatherDate;
+  let selectedEventEndDate = selectedWeatherDate;
   let weatherForecast = null;
   let eventsRequest = null;
 
@@ -322,7 +328,11 @@
     kicker.textContent = "What’s on · checking";
 
     try {
-      const params = new URLSearchParams({ date: selectedWeatherDate, category });
+      const params = new URLSearchParams({
+        startDate: selectedEventStartDate,
+        endDate: selectedEventEndDate,
+        category
+      });
       const response = await fetch(`./api/events?${params}`, {
         headers: { accept: "application/json" },
         signal: eventsRequest.signal
@@ -332,7 +342,8 @@
 
       list.replaceChildren();
       if (data.events.length) {
-        data.events.slice(0, 6).forEach((event) => list.appendChild(createEventRow(event)));
+        const showEventDates = selectedEventStartDate !== selectedEventEndDate;
+        data.events.slice(0, 6).forEach((event) => list.appendChild(createEventRow(event, showEventDates)));
         kicker.textContent = `What’s on · ${data.events.length} found`;
       } else {
         list.appendChild(createEventMessage("No matching events found", "Try another category or check Ticketmaster directly."));
@@ -356,11 +367,20 @@
     }
   }
 
-  function createEventRow(event) {
+  function createEventRow(event, showDate = false) {
     const item = document.createElement("li");
     const time = document.createElement("time");
     time.dateTime = event.dateTime || `${event.date}T${event.time || "00:00"}`;
-    time.textContent = event.time || "All day";
+    if (showDate) {
+      const day = document.createElement("span");
+      const clock = document.createElement("span");
+      day.className = "event-day";
+      day.textContent = formatEventDate(event.date, { weekday: "short", day: "numeric" });
+      clock.textContent = event.time || "All day";
+      time.append(day, clock);
+    } else {
+      time.textContent = event.time || "All day";
+    }
 
     const content = document.createElement("span");
     content.className = "event-copy";
@@ -518,13 +538,105 @@
           item.classList.toggle("is-active", selected);
           item.setAttribute("aria-pressed", selected ? "true" : "false");
         });
-        selectedDateBadge.textContent = button.dataset.badge;
         selectedWeatherDate = button.dataset.date;
         renderWeather();
-        loadEvents();
       });
       dateSwitcher.appendChild(button);
     });
+  }
+
+  function initialiseEventDateFilter() {
+    const today = londonDateKey(new Date());
+    eventDateFrom.min = today;
+    eventDateFrom.value = selectedEventStartDate;
+    eventDateTo.value = selectedEventEndDate;
+    updateEventDateLimits();
+    updateEventDateBadge();
+  }
+
+  function updateEventDateLimits() {
+    const start = isDateKey(eventDateFrom.value) ? eventDateFrom.value : londonDateKey(new Date());
+    const maximumEnd = shiftDateKey(start, 30);
+    eventDateTo.min = start;
+    eventDateTo.max = maximumEnd;
+    if (!isDateKey(eventDateTo.value) || eventDateTo.value < start || eventDateTo.value > maximumEnd) {
+      eventDateTo.value = start;
+    }
+    setEventDateHint("Choose one day or a range of up to 31 days.");
+  }
+
+  function applyEventDateFilter() {
+    const start = eventDateFrom.value;
+    const end = eventDateTo.value;
+    const days = eventRangeDays(start, end);
+    if (!isDateKey(start) || !isDateKey(end)) {
+      setEventDateHint("Choose both a start and end date.", true);
+      return false;
+    }
+    if (end < start) {
+      setEventDateHint("The end date must be on or after the start date.", true);
+      return false;
+    }
+    if (days > 31) {
+      setEventDateHint("Choose a range of no more than 31 days.", true);
+      return false;
+    }
+
+    selectedEventStartDate = start;
+    selectedEventEndDate = end;
+    updateEventDateBadge();
+    setEventDateHint(days === 1 ? "Showing events for one day." : `Showing a ${days}-day range.`);
+    return true;
+  }
+
+  function resetEventDateFilter() {
+    const today = londonDateKey(new Date());
+    eventDateFrom.value = today;
+    eventDateTo.value = today;
+    updateEventDateLimits();
+    if (applyEventDateFilter()) loadEvents();
+  }
+
+  function updateEventDateBadge() {
+    const today = londonDateKey(new Date());
+    selectedDateBadge.textContent = selectedEventStartDate === selectedEventEndDate
+      ? selectedEventStartDate === today
+        ? "Today"
+        : formatEventDate(selectedEventStartDate, { weekday: "short", day: "numeric", month: "short" })
+      : `${formatEventDate(selectedEventStartDate, { day: "numeric", month: "short" })}–${formatEventDate(selectedEventEndDate, { day: "numeric", month: "short" })}`;
+  }
+
+  function setEventDateHint(message, isError = false) {
+    eventDateHint.textContent = message;
+    eventDateHint.classList.toggle("is-error", isError);
+  }
+
+  function eventRangeDays(start, end) {
+    if (!isDateKey(start) || !isDateKey(end)) return Number.POSITIVE_INFINITY;
+    const startDate = parseDateKey(start);
+    const endDate = parseDateKey(end);
+    return Math.floor((endDate.getTime() - startDate.getTime()) / 86_400_000) + 1;
+  }
+
+  function shiftDateKey(dateKey, days) {
+    const date = parseDateKey(dateKey);
+    date.setUTCDate(date.getUTCDate() + days);
+    return date.toISOString().slice(0, 10);
+  }
+
+  function parseDateKey(dateKey) {
+    const [year, month, day] = dateKey.split("-").map(Number);
+    return new Date(Date.UTC(year, month - 1, day, 12));
+  }
+
+  function isDateKey(value) {
+    if (!/^\d{4}-\d{2}-\d{2}$/.test(value || "")) return false;
+    const date = parseDateKey(value);
+    return date.toISOString().slice(0, 10) === value;
+  }
+
+  function formatEventDate(dateKey, options) {
+    return parseDateKey(dateKey).toLocaleDateString("en-GB", { ...options, timeZone: "Europe/London" });
   }
 
   function applyView() {
@@ -623,7 +735,15 @@
   else mobileLayout.addListener(handleLayoutChange);
 
   document.querySelector("#eventCategory").addEventListener("change", loadEvents);
+  eventDateFrom.addEventListener("change", updateEventDateLimits);
+  eventDateTo.addEventListener("change", () => setEventDateHint("Choose one day or a range of up to 31 days."));
+  eventDateForm.addEventListener("submit", (event) => {
+    event.preventDefault();
+    if (applyEventDateFilter()) loadEvents();
+  });
+  document.querySelector("#eventDateReset").addEventListener("click", resetEventDateFilter);
   renderDates();
+  initialiseEventDateFilter();
   applyPreferences();
   applyView();
   loadTfl();

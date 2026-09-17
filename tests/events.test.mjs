@@ -1,6 +1,12 @@
 import test from "node:test";
 import assert from "node:assert/strict";
-import { londonDayUtcRange, normalizeTicketmaster, ticketmasterAffiliateUrl } from "../worker/index.js";
+import {
+  londonDateRangeUtc,
+  londonDayUtcRange,
+  normalizeTicketmaster,
+  ticketmasterAffiliateUrl,
+  validateEventDateRange
+} from "../worker/index.js";
 
 const requestedDate = "2026-09-05";
 const checkedAt = "2026-09-04T12:00:00.000Z";
@@ -112,5 +118,55 @@ test("builds Ticketmaster query boundaries for London daylight saving time", () 
   assert.deepEqual(londonDayUtcRange("2026-12-05"), {
     start: "2026-12-05T00:00:00Z",
     end: "2026-12-06T00:00:00Z"
+  });
+});
+
+test("normalizes events across an inclusive selected date range", () => {
+  const endDate = "2026-09-07";
+  const result = normalizeTicketmaster({
+    _embedded: {
+      events: [
+        event(),
+        event({
+          id: "tm-2",
+          name: "Range Closing Concert",
+          dates: {
+            start: { localDate: endDate, localTime: "20:00:00", dateTime: "2026-09-07T19:00:00Z" },
+            status: { code: "onsale" }
+          }
+        }),
+        event({
+          id: "outside",
+          dates: {
+            start: { localDate: "2026-09-08", localTime: "18:00:00" },
+            status: { code: "onsale" }
+          }
+        })
+      ]
+    }
+  }, requestedDate, "music", checkedAt, endDate);
+
+  assert.deepEqual(result.events.map((item) => item.id), ["tm-1", "tm-2"]);
+  assert.equal(result.requestedDate, null);
+  assert.equal(result.requestedStartDate, requestedDate);
+  assert.equal(result.requestedEndDate, endDate);
+});
+
+test("validates single dates and ranges up to 31 inclusive days", () => {
+  assert.deepEqual(validateEventDateRange("2026-09-05"), {
+    startDate: "2026-09-05",
+    endDate: "2026-09-05",
+    days: 1
+  });
+  assert.equal(validateEventDateRange("2026-09-01", "2026-10-01").days, 31);
+  assert.throws(() => validateEventDateRange("2026-02-30"), /Invalid start date/);
+  assert.throws(() => validateEventDateRange("2026-09-06", "2026-09-05"), /on or after/);
+  assert.throws(() => validateEventDateRange("2026-09-01", "2026-10-02"), /cannot exceed 31 days/);
+});
+
+test("builds a London UTC interval across a daylight-saving change", () => {
+  assert.deepEqual(londonDateRangeUtc("2026-10-24", "2026-10-26"), {
+    start: "2026-10-23T23:00:00Z",
+    end: "2026-10-27T00:00:00Z"
   });
 });

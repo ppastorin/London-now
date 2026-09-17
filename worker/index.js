@@ -16,6 +16,7 @@ const WEATHER_STALE_AFTER_MS = 2 * 60 * 60 * 1000;
 const AIR_QUALITY_DEFAULT_REFRESH_MS = 20 * 60 * 1000;
 const AIR_QUALITY_STALE_AFTER_MS = 2 * 60 * 60 * 1000;
 const EVENTS_CACHE_SECONDS = 6 * 60 * 60;
+const MAX_EVENT_RANGE_DAYS = 31;
 
 const EVENT_CATEGORIES = {
   all: null,
@@ -108,23 +109,28 @@ async function handleEvents(request, env, context) {
   }
 
   const requestUrl = new URL(request.url);
-  const date = requestUrl.searchParams.get("date") || londonDateKey(new Date());
+  const legacyDate = requestUrl.searchParams.get("date");
+  const startDate = requestUrl.searchParams.get("startDate") || legacyDate || londonDateKey(new Date());
+  const endDate = requestUrl.searchParams.get("endDate") || startDate;
   const category = requestUrl.searchParams.get("category") || "all";
-  if (!/^\d{4}-\d{2}-\d{2}$/.test(date) || !isValidDateKey(date)) {
-    return json({ error: "Invalid date; use YYYY-MM-DD" }, 400, { "cache-control": "no-store" });
+  let requestedRange;
+  try {
+    requestedRange = validateEventDateRange(startDate, endDate);
+  } catch (error) {
+    return json({ error: error instanceof Error ? error.message : "Invalid event date range" }, 400, { "cache-control": "no-store" });
   }
   if (!(category in EVENT_CATEGORIES)) {
     return json({ error: "Invalid event category" }, 400, { "cache-control": "no-store" });
   }
 
   const cache = caches.default;
-  const cacheUrl = new URL("/__cache/events-v2-affiliate", request.url);
-  cacheUrl.search = new URLSearchParams({ date, category }).toString();
+  const cacheUrl = new URL("/__cache/events-v3-range-affiliate", request.url);
+  cacheUrl.search = new URLSearchParams({ startDate, endDate, category }).toString();
   const cacheKey = new Request(cacheUrl.toString(), { method: "GET" });
   const cached = await cache.match(cacheKey);
   if (cached) return withCacheStatus(cached, "HIT");
 
-  const range = londonDayUtcRange(date);
+  const range = londonDateRangeUtc(requestedRange.startDate, requestedRange.endDate);
   const upstreamUrl = new URL(TICKETMASTER_EVENTS_URL);
   upstreamUrl.searchParams.set("apikey", env.TICKETMASTER_API_KEY);
   upstreamUrl.searchParams.set("countryCode", "GB");
@@ -147,7 +153,13 @@ async function handleEvents(request, env, context) {
     });
     if (!upstream.ok) throw new Error(`Ticketmaster returned HTTP ${upstream.status}`);
 
-    const events = normalizeTicketmaster(await upstream.json(), date, category);
+    const events = normalizeTicketmaster(
+      await upstream.json(),
+      requestedRange.startDate,
+      category,
+      new Date().toISOString(),
+      requestedRange.endDate
+    );
     const response = json(events, 200, {
       "cache-control": `public, max-age=300, s-maxage=${EVENTS_CACHE_SECONDS}`,
       "x-cache": "MISS"
@@ -713,7 +725,13 @@ export function normalizeAirportAccess(tfl, railRoutes = [], checkedAt = tfl?.ch
   };
 }
 
-export function normalizeTicketmaster(payload, requestedDate, requestedCategory = "all", checkedAt = new Date().toISOString()) {
+export function normalizeTicketmaster(
+  payload,
+  requestedStartDate,
+  requestedCategory = "all",
+  checkedAt = new Date().toISOString(),
+  requestedEndDate = requestedStartDate
+) {
   const rawEvents = payload?._embedded?.events;
   if (rawEvents != null && !Array.isArray(rawEvents)) {
     throw new TypeError("Unexpected Ticketmaster response");
@@ -725,7 +743,7 @@ export function normalizeTicketmaster(payload, requestedDate, requestedCategory 
       const title = cleanText(event?.name);
       const ticketUrl = validHttpsUrl(event?.url);
       if (!event?.id || !date || !title || !ticketUrl) return null;
-      if (date !== requestedDate) return null;
+      if (date < requestedStartDate || date > requestedEndDate) return null;
 
       const statusCode = cleanText(event?.dates?.status?.code).toLowerCase();
       if (statusCode === "cancelled") return null;
@@ -762,7 +780,9 @@ export function normalizeTicketmaster(payload, requestedDate, requestedCategory 
     provider: "Ticketmaster Discovery API",
     sourceUrl: "https://www.ticketmaster.co.uk/discover/london",
     checkedAt,
-    requestedDate,
+    requestedDate: requestedStartDate === requestedEndDate ? requestedStartDate : null,
+    requestedStartDate,
+    requestedEndDate,
     requestedCategory,
     affiliateLinks: events.some((event) => Boolean(event.affiliateUrl)),
     count: events.length,
@@ -831,6 +851,24 @@ function isValidDateKey(value) {
   return date.getUTCFullYear() === year && date.getUTCMonth() === month - 1 && date.getUTCDate() === day;
 }
 
+export function validateEventDateRange(startDate, endDate = startDate) {
+  if (!/^\d{4}-\d{2}-\d{2}$/.test(startDate || "") || !isValidDateKey(startDate)) {
+    throw new RangeError("Invalid start date; use YYYY-MM-DD");
+  }
+  if (!/^\d{4}-\d{2}-\d{2}$/.test(endDate || "") || !isValidDateKey(endDate)) {
+    throw new RangeError("Invalid end date; use YYYY-MM-DD");
+  }
+
+  const startTime = Date.parse(`${startDate}T00:00:00Z`);
+  const endTime = Date.parse(`${endDate}T00:00:00Z`);
+  const days = Math.floor((endTime - startTime) / 86_400_000) + 1;
+  if (days < 1) throw new RangeError("End date must be on or after start date");
+  if (days > MAX_EVENT_RANGE_DAYS) {
+    throw new RangeError(`Event date range cannot exceed ${MAX_EVENT_RANGE_DAYS} days`);
+  }
+  return { startDate, endDate, days };
+}
+
 function londonDateKey(value) {
   const parts = new Intl.DateTimeFormat("en-CA", {
     year: "numeric",
@@ -848,6 +886,12 @@ export function londonDayUtcRange(dateKey) {
   const next = new Date(Date.UTC(year, month - 1, day + 1));
   const end = londonMidnightUtc(next.getUTCFullYear(), next.getUTCMonth() + 1, next.getUTCDate());
   return { start: start.toISOString().replace(".000Z", "Z"), end: end.toISOString().replace(".000Z", "Z") };
+}
+
+export function londonDateRangeUtc(startDateKey, endDateKey = startDateKey) {
+  const start = londonDayUtcRange(startDateKey).start;
+  const end = londonDayUtcRange(endDateKey).end;
+  return { start, end };
 }
 
 function londonMidnightUtc(year, month, day) {

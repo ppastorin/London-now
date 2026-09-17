@@ -159,16 +159,33 @@
           </div>
           <span class="date-badge" id="selectedDateBadge">Today</span>
         </header>
-        <label class="event-filter" for="eventCategory">
-          <span>Category</span>
-          <select id="eventCategory">
-            <option value="all">All events</option>
-            <option value="music">Music</option>
-            <option value="arts">Theatre &amp; arts</option>
-            <option value="sports">Sport</option>
-            <option value="family">Family</option>
-          </select>
-        </label>
+        <div class="event-filters">
+          <label class="event-filter" for="eventCategory">
+            <span>Category</span>
+            <select id="eventCategory">
+              <option value="all">All events</option>
+              <option value="music">Music</option>
+              <option value="arts">Theatre &amp; arts</option>
+              <option value="sports">Sport</option>
+              <option value="family">Family</option>
+            </select>
+          </label>
+          <form class="event-date-form" id="eventDateForm" aria-label="Choose event date or date range" novalidate>
+            <span class="event-filter-label">Dates</span>
+            <label class="event-date-field" for="eventDateFrom">
+              <span>From</span>
+              <input id="eventDateFrom" name="startDate" type="date" required>
+            </label>
+            <span class="event-date-separator" aria-hidden="true">to</span>
+            <label class="event-date-field" for="eventDateTo">
+              <span>To</span>
+              <input id="eventDateTo" name="endDate" type="date" required>
+            </label>
+            <button class="inline-control event-date-apply" type="submit">Show events</button>
+            <button class="event-date-reset" id="eventDateReset" type="button">Today</button>
+          </form>
+          <p class="event-filter-hint" id="eventDateHint" role="status">Choose one day or a range of up to 31 days.</p>
+        </div>
         <ul class="event-list" id="eventList" aria-busy="true">
           <li class="loading-row"><span class="loading-bar"></span><span>Finding events in London…</span></li>
         </ul>
